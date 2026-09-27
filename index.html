@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problema del camino mínimo usando el algoritmo de Dijkstra | Matemática Computacional</title>
+  <meta name="description" content="Simulador interactivo del problema del camino mínimo usando el algoritmo de Dijkstra en grafos dirigidos acíclicos ponderados (DAGs). Proyecto académico de Matemática Computacional.">
+  
+  <!-- Tipografía Editorial: Newsreader (Serif), Inter (Sans) y JetBrains Mono (Mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Hoja de estilos principal -->
+  <link rel="stylesheet" href="./styles/main.css">
+  
+  <!-- Cytoscape.js desde CDN oficial -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+</head>
+<body>
+
+  <!-- Encabezado Editorial Académico Minimalista -->
+  <header class="header-editorial">
+    <div class="header-inner">
+      <div class="header-eyebrow">
+        <span>●</span> MATEMÁTICA COMPUTACIONAL • PROBLEMA DEL CAMINO MÍNIMO
+      </div>
+      <h1 class="header-main-title">
+        Problema del camino mínimo <span class="title-accent">Dijkstra</span>
+      </h1>
+      <p class="header-description">
+        Modelado interactivo en Grafos Dirigidos Acíclicos Ponderados (DAGs). Determinación paso a paso de distancias tentativas, relajación de aristas cuando <span class="pill-formula">dist(u) + w &lt; dist(v)</span> y detección exhaustiva de múltiples caminos mínimos alternativos cuando <span class="pill-formula">dist(u) + w == dist(v)</span>.
+      </p>
+
+      <!-- Píldoras de Navegación del Flujo Académico (Inspirado en la referencia) -->
+      <nav class="pipeline-pills" aria-label="Etapas del problema">
+        <span class="pipeline-pill active"><span class="pill-dot"></span> 1. Nodos</span>
+        <span class="pipeline-pill active"><span class="pill-dot"></span> 2. Construcción DAG</span>
+        <span class="pipeline-pill active"><span class="pill-dot"></span> 3. Origen y Destino</span>
+        <span class="pipeline-pill active"><span class="pill-dot"></span> 4. Dijkstra Paso a Paso</span>
+        <span class="pipeline-pill active"><span class="pill-dot"></span> 5. Múltiples Rutas</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal de la Aplicación -->
+  <main class="main-layout">
+    
+    <!-- Contenedor de Alertas y Notificaciones Globales -->
+    <div class="alert-box-container">
+      <div id="global-alert-box" class="alert alert-hidden" role="alert"></div>
+    </div>
+
+    <div class="grid-container">
+
+      <!-- ================= COLUMNA LATERAL (CONFIGURACIÓN Y CONSTRUCCIÓN) ================= -->
+      <aside class="sidebar-panels">
+
+        <!-- 1. Configuración del Grafo -->
+        <section class="card" id="section-config-nodes">
+          <div class="card-header">
+            <h2><span class="header-step-num">1</span> Configuración del grafo</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <label for="node-count-input" class="form-label">Cantidad de vértices (n):</label>
+              <div class="input-row">
+                <input 
+                  type="number" 
+                  id="node-count-input" 
+                  class="form-control" 
+                  min="7" 
+                  max="16" 
+                  value="8" 
+                  placeholder="Entre 7 y 16"
+                >
+                <button type="button" id="btn-create-nodes" class="btn btn-primary" title="Generar nodos alfabéticos">
+                  Crear nodos
+                </button>
+              </div>
+              <small class="form-text">Restricción académica obligatoria: mínimo 7 y máximo 16 nodos.</small>
+            </div>
+
+            <div class="mt-3" style="margin-top: 1rem;">
+              <button type="button" id="btn-reset-project" class="btn btn-secondary btn-block btn-sm">
+                🔄 Reiniciar proyecto completo
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Construcción del Grafo -->
+        <section class="card" id="section-build-graph">
+          <div class="card-header">
+            <h2><span class="header-step-num">2</span> Construcción del grafo</h2>
+          </div>
+          
+          <!-- Pestañas de modo -->
+          <div class="tab-navigation">
+            <button type="button" class="tab-btn active" id="tab-btn-manual">Modo Manual</button>
+            <button type="button" class="tab-btn" id="tab-btn-random">Modo Aleatorio</button>
+          </div>
+
+          <!-- Pestaña: Modo Manual -->
+          <div class="tab-pane" id="pane-manual">
+            <div class="form-group">
+              <div class="input-row">
+                <div style="flex: 1;">
+                  <label for="edge-from" class="form-label">Origen (u):</label>
+                  <select id="edge-from" class="form-select"></select>
+                </div>
+                <div style="flex: 1;">
+                  <label for="edge-to" class="form-label">Destino (v):</label>
+                  <select id="edge-to" class="form-select"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="edge-weight" class="form-label">Peso entero positivo (w ≥ 1):</label>
+              <input type="number" id="edge-weight" class="form-control" min="1" placeholder="Ej: 5">
+            </div>
+
+            <div class="form-group">
+              <button type="button" id="btn-add-edge" class="btn btn-primary btn-block">
+                ➕ Agregar arista dirigida
+              </button>
+            </div>
+
+            <!-- Tabla de aristas agregadas -->
+            <div class="d-flex justify-content-between align-items-center" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+              <span class="form-label mb-0" style="margin-bottom: 0;">Aristas definidas:</span>
+              <span id="edges-count-badge" class="badge badge-count">0 arista(s)</span>
+            </div>
+
+            <div class="table-container">
+              <table class="academic-table">
+                <thead>
+                  <tr>
+                    <th>Origen</th>
+                    <th>Destino</th>
+                    <th>Peso</th>
+                    <th>Acción</th>
+                  </tr>
+                </thead>
+                <tbody id="edges-table-body">
+                  <tr class="empty-row">
+                    <td colspan="4" class="text-center text-muted py-3">No hay aristas agregadas.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top: 0.75rem;">
+              <button type="button" id="btn-clear-edges" class="btn btn-secondary btn-sm btn-block">
+                🗑️ Limpiar todas las aristas
+              </button>
+            </div>
+          </div>
+
+          <!-- Pestaña: Modo Aleatorio -->
+          <div class="tab-pane d-none" id="pane-random">
+            <div class="form-group">
+              <label for="random-density" class="form-label">Densidad de aristas:</label>
+              <select id="random-density" class="form-select">
+                <option value="baja">Baja (~1.3n aristas)</option>
+                <option value="media" selected>Media (~2.0n aristas)</option>
+                <option value="alta">Alta (~2.8n aristas)</option>
+              </select>
+              <small class="form-text">Genera un DAG conexo con pesos aleatorios enteros de 1 a 20 garantizando que no existan ciclos.</small>
+            </div>
+
+            <div class="form-group">
+              <button type="button" id="btn-generate-random" class="btn btn-primary btn-block">
+                🎲 Generar grafo aleatorio
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón de Demostración Especial -->
+          <div style="padding: 0 1.4rem 1.4rem;">
+            <button type="button" id="btn-load-example" class="btn btn-secondary btn-block" style="border: 1px dashed var(--teal-primary); color: var(--teal-primary); font-weight: 600;">
+              ⭐ Cargar ejemplo (Múltiples caminos mínimos)
+            </button>
+            <small class="form-text text-center" style="display: block; text-align: center; margin-top: 0.35rem;">
+              Caso de 8 nodos con 4 rutas óptimas simultáneas de coste 15.
+            </small>
+          </div>
+        </section>
+
+        <!-- 4. Selección de Origen y Destino -->
+        <section class="card" id="section-select-nodes">
+          <div class="card-header">
+            <h2><span class="header-step-num">3</span> Selección de origen y destino</h2>
+          </div>
+          <div class="card-body">
+            <div class="form-group">
+              <div class="input-row">
+                <div style="flex: 1;">
+                  <label for="dijkstra-origin" class="form-label">Vértice origen:</label>
+                  <select id="dijkstra-origin" class="form-select"></select>
+                </div>
+                <div style="flex: 1;">
+                  <label for="dijkstra-destination" class="form-label">Vértice destino:</label>
+                  <select id="dijkstra-destination" class="form-select"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 1.25rem;">
+              <button type="button" id="btn-start-dijkstra" class="btn btn-primary btn-block" style="font-size: 0.95rem; padding: 0.75rem;">
+                🚀 Preparar e Iniciar Dijkstra
+              </button>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+
+      <!-- ================= COLUMNA PRINCIPAL (VISUALIZACIÓN Y EJECUCIÓN) ================= -->
+      <section class="main-content-panels">
+
+        <!-- 3. Visualización del Grafo (Cytoscape.js) -->
+        <div class="card">
+          <div class="card-header">
+            <h2><span class="header-step-num">G</span> Representación gráfica del DAG (Cytoscape.js)</h2>
+            <div class="canvas-actions">
+              <button type="button" id="btn-fit-graph" class="btn btn-secondary btn-sm" title="Centrar y ajustar vista del grafo">
+                🔍 Centrar vista
+              </button>
+            </div>
+          </div>
+          
+          <div class="canvas-wrapper">
+            <div id="cy-container"></div>
+            
+            <!-- Leyenda Visual Didáctica -->
+            <div class="legend-card">
+              <div class="legend-grid">
+                <div class="legend-item">
+                  <span class="legend-color-dot dot-normal"></span>
+                  <span>Normal</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color-dot dot-origin"></span>
+                  <span>Origen</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color-dot dot-destination"></span>
+                  <span>Destino</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color-dot dot-current"></span>
+                  <span>Actual</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-color-dot dot-visited"></span>
+                  <span>Visitado</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-line line-evaluating"></span>
+                  <span>En evaluación</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-line line-improved"></span>
+                  <span>Relajación / Mejora</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-line line-path"></span>
+                  <span>Camino(s) mínimo(s)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Ejecución Paso a Paso de Dijkstra -->
+        <div class="card" id="section-step-execution">
+          <div class="card-header">
+            <h2><span class="header-step-num">4</span> Ejecución interactiva paso a paso</h2>
+            <span id="step-counter-badge" class="badge badge-count">Paso 0 de 0</span>
+          </div>
+
+          <div class="card-body">
+            
+            <!-- Barra de Progreso -->
+            <div class="progress-track">
+              <div id="step-progress-bar" class="progress-fill"></div>
+            </div>
+
+            <!-- Botones de Navegación Interactiva -->
+            <div class="execution-controls">
+              <button type="button" id="btn-prev-step" class="btn btn-secondary" disabled title="Paso anterior (Atajo: Flecha Izquierda)">
+                ◀ Paso anterior
+              </button>
+              <button type="button" id="btn-next-step" class="btn btn-primary" disabled title="Siguiente paso (Atajo: Flecha Derecha)">
+                Siguiente paso ▶
+              </button>
+              <button type="button" id="btn-final-step" class="btn btn-secondary" disabled title="Saltar al resultado final (Atajo: Fin)">
+                🏁 Ver resultado final
+              </button>
+              <button type="button" id="btn-reset-dijkstra" class="btn btn-secondary btn-sm" disabled title="Reiniciar ejecución (Atajo: Inicio)">
+                ⏮ Reiniciar
+              </button>
+            </div>
+
+            <!-- Tarjeta Didáctica de Explicación y Matemáticas -->
+            <div class="step-card">
+              <div class="step-header-row">
+                <h4 id="step-iteration-title">Algoritmo no iniciado</h4>
+                <span id="step-current-node-badge" class="badge badge-pending" style="display: none;"></span>
+              </div>
+              <p id="step-explanation-text" class="step-explanation">
+                Seleccione el origen y destino en la sección lateral y presione "Iniciar Dijkstra" para comenzar la simulación interactiva paso a paso.
+              </p>
+              <div id="step-math-operation" class="step-math-box">
+                dist(v) = ∞
+              </div>
+            </div>
+
+            <!-- Tabla de Etiquetas de Vértices -->
+            <div class="form-group">
+              <h5 class="form-label" style="font-size: 0.85rem; margin-bottom: 0.5rem;">
+                Tabla de Etiquetas y Distancias Acumuladas
+              </h5>
+              <div class="table-container" style="max-height: 280px;">
+                <table class="academic-table">
+                  <thead>
+                    <tr>
+                      <th>Vértice</th>
+                      <th>Distancia acumulada</th>
+                      <th>Predecesor(es)</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dijkstra-labels-body">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted py-3">
+                        Inicie el algoritmo para observar el etiquetado dinámico de vértices.
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Panel de Resultados Finales de Caminos Mínimos -->
+            <div id="dijkstra-final-results" style="display: none;"></div>
+
+          </div>
+        </div>
+
+        <!-- 8. Matriz y Lista de Adyacencia -->
+        <div class="card" id="section-math-representations">
+          <div class="card-header">
+            <h2><span class="header-step-num">5</span> Representaciones matemáticas formales</h2>
+          </div>
+          <div class="card-body">
+            <div class="math-representations-grid">
+              
+              <!-- Lista de Adyacencia -->
+              <div>
+                <h4 class="form-label" style="font-size: 0.82rem; margin-bottom: 0.5rem;">
+                  Lista de Adyacencia
+                </h4>
+                <div id="adjacency-list-content">
+                  <p class="text-muted">Configure el grafo para visualizar las listas de adyacencia.</p>
+                </div>
+              </div>
+
+              <!-- Matriz de Pesos -->
+              <div>
+                <h4 class="form-label" style="font-size: 0.82rem; margin-bottom: 0.5rem;">
+                  Matriz de Pesos (Adyacencia Ponderada)
+                </h4>
+                <div id="adjacency-matrix-content">
+                  <p class="text-muted">Configure el grafo para visualizar la matriz de pesos.</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Pie de Página Académico -->
+  <footer class="footer-academic">
+    <div class="header-inner">
+      <p>
+        <strong>Problema del camino mínimo usando el algoritmo de Dijkstra</strong> • Matemática Computacional • UPC
+      </p>
+    </div>
+  </footer>
+
+  <!-- Carga del Módulo Principal ES6 (Requisito para Live Server y GitHub Pages) -->
+  <script type="module" src="./js/app.js"></script>
+
+  <!-- Fallback de compatibilidad automática para ejecución local por doble clic (protocolo file:///) -->
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        if (!window.__APP_INITIALIZED__) {
+          console.info('Protocolo file:/// detectado (módulo ES6 bloqueado por CORS). Cargando bundle autónomo...');
+          const script = document.createElement('script');
+          script.src = './js/app.bundle.js';
+          document.body.appendChild(script);
+        }
+      }, 60);
+    });
+  </script>
+
+</body>
+</html>
