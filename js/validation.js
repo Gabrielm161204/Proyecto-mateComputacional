@@ -4,7 +4,6 @@
  * y detección manual de ciclos en grafos dirigidos usando DFS.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 /**
