@@ -6,7 +6,6 @@
  * Permite avanzar, retroceder (sin recalcular), ir al paso final y reiniciar la ejecución.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 export class StepManager {
