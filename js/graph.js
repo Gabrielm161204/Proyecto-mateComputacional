@@ -5,7 +5,6 @@
  * generación de DAGs aleatorios y conversión a formato Cytoscape.js.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 export class Graph {
