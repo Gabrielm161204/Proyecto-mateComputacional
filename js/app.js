@@ -5,7 +5,6 @@
  * navegación de pasos e interfaz de usuario.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 import { Graph } from './graph.js';
