@@ -5,7 +5,6 @@
  * de las etapas pedagógicas del algoritmo de Dijkstra.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 export class UIManager {
