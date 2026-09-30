@@ -81,29 +81,9 @@ El proyecto cumple estrictamente las restricciones técnicas solicitadas:
 
 ---
 
-## 4. Instrucciones de Ejecución Local
 
-Dado que la aplicación utiliza módulos nativos de JavaScript (`import` / `export`), los navegadores requieren que los archivos se sirvan bajo el protocolo `http://` o `https://` (no `file:///` debido a las políticas de seguridad CORS del navegador).
 
-### Opción A: Con Live Server en Visual Studio Code (Recomendada)
-
-1. Abra la carpeta del proyecto en **Visual Studio Code**.
-2. Asegúrese de tener instalada la extensión oficial **Live Server** (creada por *Ritwick Dey*).
-3. Haga clic derecho sobre el archivo [index.html](file:///c:/Users/gmora/Documents/index.html) y seleccione **"Open with Live Server"** (o presione `Alt + L, Alt + O`).
-4. Se abrirá automáticamente su navegador predeterminado en `http://127.0.0.1:5500/index.html`.
-
-### Opción B: Con cualquier servidor web estático local
-
-Si cuenta con Python instalado (o el servidor de su preferencia):
-```bash
-# Python 3
-python -m http.server 8000
-```
-Luego ingrese a `http://localhost:8000`.
-
----
-
-## 5. Instrucciones de Despliegue en GitHub Pages
+## 4. Instrucciones de Despliegue en GitHub Pages
 
 Para publicar el simulador como un sitio estático gratuito en la web:
 
@@ -128,7 +108,7 @@ Para publicar el simulador como un sitio estático gratuito en la web:
 
 ---
 
-## 6. Lista de Pruebas Manuales (Casos de Prueba)
+## 5. Lista de Pruebas Manuales (Casos de Prueba)
 
 | Caso de Prueba | Entrada / Acción | Resultado Esperado |
 |---|---|---|
@@ -147,7 +127,7 @@ Para publicar el simulador como un sitio estático gratuito en la web:
 
 ---
 
-## 7. Puntos Clave para la Sustentación Académica
+## 6. Puntos Clave para la Sustentación Académica
 
 Respuestas directas y fundamentadas a las preguntas teóricas del docente:
 
