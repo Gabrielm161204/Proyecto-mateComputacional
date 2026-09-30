@@ -5,7 +5,6 @@
  * para hallar todas las rutas óptimas alternativas entre origen y destino.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 /**
