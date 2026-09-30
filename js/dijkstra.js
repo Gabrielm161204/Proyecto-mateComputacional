@@ -7,7 +7,6 @@
  * interactiva en la interfaz de usuario.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
- * Asignatura: Matemática Computacional
  */
 
 import { findAllShortestPaths, getShortestPathEdges } from './paths.js';
