@@ -1,201 +1,213 @@
 /**
- * graph.js
+ * grafo.js
  * Módulo para la representación interna del grafo dirigido y ponderado.
  * Gestiona nodos, aristas, lista de adyacencia, matriz de pesos y conversión a formato Cytoscape.js.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
  */
 
-export class Graph {
+export class Grafo {
   constructor() {
-    this.nodes = []; // Array de etiquetas: ['A', 'B', ...]
-    this.edges = []; // Array de objetos: [{ id, from, to, weight }]
+    this.nodos = []; // Array de etiquetas: ['A', 'B', ...]
+    this.aristas = []; // Array de objetos: [{ id, origen, destino, peso }]
   }
 
   /**
    * Genera los nodos con etiquetas alfabéticas consecutivas (A, B, C, ...).
-   * @param {number} count - Cantidad de nodos (7 a 16).
+   * @param {number} cantidad - Cantidad de nodos (7 a 16).
    */
-  setNodes(count) {
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    this.nodes = [];
-    for (let i = 0; i < count; i++) {
-      this.nodes.push(letters[i]);
+  establecerNodos(cantidad) {
+    const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    this.nodos = [];
+    for (let i = 0; i < cantidad; i++) {
+      this.nodos.push(letras[i]);
     }
-    this.edges = [];
+    this.aristas = [];
   }
 
   /**
    * Obtiene la lista actual de nodos.
    * @returns {string[]}
    */
-  getNodes() {
-    return [...this.nodes];
+  obtenerNodos() {
+    return [...this.nodos];
   }
 
   /**
    * Obtiene la lista actual de aristas.
-   * @returns {Array<{ id: string, from: string, to: string, weight: number }>}
+   * @returns {Array<{ id: string, origen: string, destino: string, peso: number }>}
    */
-  getEdges() {
-    return this.edges.map(e => ({ ...e }));
+  obtenerAristas() {
+    return this.aristas.map(a => ({ ...a }));
   }
 
   /**
    * Agrega una arista dirigida ponderada al grafo.
-   * @param {string} from - Vértice origen.
-   * @param {string} to - Vértice destino.
-   * @param {number} weight - Peso entero positivo.
-   * @returns {{ success: boolean, edge?: object }}
+   * @param {string} origen - Vértice origen.
+   * @param {string} destino - Vértice destino.
+   * @param {number} peso - Peso entero positivo.
+   * @returns {{ exito: boolean, arista?: object }}
    */
-  addEdge(from, to, weight) {
-    const id = `${from}-${to}`;
-    const edge = { id, from, to, weight: Number(weight) };
-    this.edges.push(edge);
-    return { success: true, edge };
+  agregarArista(origen, destino, peso) {
+    const id = `${origen}-${destino}`;
+    const arista = {
+      id,
+      origen,
+      destino,
+      peso: Number(peso),
+      from: origen,
+      to: destino,
+      weight: Number(peso)
+    };
+    this.aristas.push(arista);
+    return { exito: true, arista };
   }
 
   /**
    * Elimina una arista dirigida.
-   * @param {string} from - Vértice origen.
-   * @param {string} to - Vértice destino.
+   * @param {string} origen - Vértice origen.
+   * @param {string} destino - Vértice destino.
    * @returns {boolean}
    */
-  removeEdge(from, to) {
-    const initialLength = this.edges.length;
-    this.edges = this.edges.filter(e => !(e.from === from && e.to === to));
-    return this.edges.length < initialLength;
+  eliminarArista(origen, destino) {
+    const longitudInicial = this.aristas.length;
+    this.aristas = this.aristas.filter(a => !(a.origen === origen && a.destino === destino));
+    return this.aristas.length < longitudInicial;
   }
 
   /**
    * Elimina todas las aristas del grafo manteniendo los nodos.
    */
-  clearEdges() {
-    this.edges = [];
+  limpiarAristas() {
+    this.aristas = [];
   }
 
   /**
    * Reinicia completamente el grafo (sin nodos ni aristas).
    */
-  reset() {
-    this.nodes = [];
-    this.edges = [];
+  reiniciar() {
+    this.nodos = [];
+    this.aristas = [];
   }
 
   /**
    * Verifica si ya existe una arista en esa dirección.
-   * @param {string} from 
-   * @param {string} to 
+   * @param {string} origen 
+   * @param {string} destino 
    * @returns {boolean}
    */
-  hasEdge(from, to) {
-    return this.edges.some(e => e.from === from && e.to === to);
+  existeArista(origen, destino) {
+    return this.aristas.some(a => a.origen === origen && a.destino === destino);
   }
 
   /**
    * Obtiene las aristas salientes de un nodo dado.
-   * @param {string} node 
-   * @returns {Array<{ id: string, from: string, to: string, weight: number }>}
+   * @param {string} nodo 
+   * @returns {Array<{ id: string, origen: string, destino: string, peso: number }>}
    */
-  getOutgoingEdges(node) {
-    return this.edges.filter(e => e.from === node);
+  obtenerAristasSalientes(nodo) {
+    return this.aristas.filter(a => a.origen === nodo);
   }
 
   /**
    * Construye la lista de adyacencia del grafo.
-   * @returns {Record<string, Array<{ to: string, weight: number }>>}
+   * @returns {Record<string, Array<{ destino: string, peso: number, to: string, weight: number }>>}
    */
-  getAdjacencyList() {
-    const adj = {};
-    for (const node of this.nodes) {
-      adj[node] = [];
+  obtenerListaAdyacencia() {
+    const adyacencia = {};
+    for (const nodo of this.nodos) {
+      adyacencia[nodo] = [];
     }
-    for (const edge of this.edges) {
-      if (adj[edge.from]) {
-        adj[edge.from].push({ to: edge.to, weight: edge.weight });
+    for (const arista of this.aristas) {
+      if (adyacencia[arista.origen]) {
+        adyacencia[arista.origen].push({
+          destino: arista.destino,
+          peso: arista.peso,
+          to: arista.destino,
+          weight: arista.peso
+        });
       }
     }
-    return adj;
+    return adyacencia;
   }
-
 
   /**
    * Construye la matriz de adyacencia ponderada.
-   * @returns {{ nodes: string[], matrix: Array<Array<number|null>> }}
+   * @returns {{ nodos: string[], matriz: Array<Array<number|null>> }}
    */
-  getAdjacencyMatrix() {
-    const n = this.nodes.length;
-    const nodeIndex = new Map(this.nodes.map((node, i) => [node, i]));
-    const matrix = Array.from({ length: n }, () => Array(n).fill(null));
+  obtenerMatrizAdyacencia() {
+    const n = this.nodos.length;
+    const indiceNodo = new Map(this.nodos.map((nodo, i) => [nodo, i]));
+    const matriz = Array.from({ length: n }, () => Array(n).fill(null));
 
     // Diagonal en 0
     for (let i = 0; i < n; i++) {
-      matrix[i][i] = 0;
+      matriz[i][i] = 0;
     }
 
     // Pesos de las aristas
-    for (const edge of this.edges) {
-      const u = nodeIndex.get(edge.from);
-      const v = nodeIndex.get(edge.to);
+    for (const arista of this.aristas) {
+      const u = indiceNodo.get(arista.origen);
+      const v = indiceNodo.get(arista.destino);
       if (u !== undefined && v !== undefined) {
-        matrix[u][v] = edge.weight;
+        matriz[u][v] = arista.peso;
       }
     }
 
-    return { nodes: [...this.nodes], matrix };
+    return { nodos: [...this.nodos], matriz };
   }
 
   /**
    * Convierte los nodos y aristas a formato de elementos para Cytoscape.js,
-   * asignando posiciones calculadas por niveles topológicos para un DAG perfecto.
+   * asignando posiciones calculadas por niveles topológicos para un DAG.
    * @returns {Array<object>}
    */
-  toCytoscapeElements() {
-    const ranks = this.computeTopologicalRanks();
-    const rankGroups = new Map();
-    for (const node of this.nodes) {
-      const r = ranks.get(node) || 0;
-      if (!rankGroups.has(r)) rankGroups.set(r, []);
-      rankGroups.get(r).push(node);
+  aElementosCytoscape() {
+    const rangos = this.calcularRangosTopologicos();
+    const gruposRango = new Map();
+    for (const nodo of this.nodos) {
+      const r = rangos.get(nodo) || 0;
+      if (!gruposRango.has(r)) gruposRango.set(r, []);
+      gruposRango.get(r).push(nodo);
     }
 
-    const elements = [];
+    const elementos = [];
 
     // Dimensiones para distribución visual de izquierda a derecha
-    const xSpacing = 160;
-    const ySpacing = 110;
-    const xOffset = 80;
-    const yOffset = 80;
+    const espaciadoX = 160;
+    const espaciadoY = 110;
+    const desplazamientoX = 80;
+    const desplazamientoY = 80;
 
-    for (const [rank, groupNodes] of rankGroups.entries()) {
-      const totalInRank = groupNodes.length;
-      groupNodes.forEach((node, idx) => {
+    for (const [rango, nodosGrupo] of gruposRango.entries()) {
+      const totalEnRango = nodosGrupo.length;
+      nodosGrupo.forEach((nodo, indice) => {
         // Centrar verticalmente cada columna
-        const yPos = yOffset + (idx - (totalInRank - 1) / 2) * ySpacing + 150;
-        const xPos = xOffset + rank * xSpacing;
+        const posPosY = desplazamientoY + (indice - (totalEnRango - 1) / 2) * espaciadoY + 150;
+        const posPosX = desplazamientoX + rango * espaciadoX;
 
-        elements.push({
+        elementos.push({
           group: 'nodes',
-          data: { id: node, label: node },
-          position: { x: xPos, y: yPos }
+          data: { id: nodo, label: nodo },
+          position: { x: posPosX, y: posPosY }
         });
       });
     }
 
-    for (const edge of this.edges) {
-      elements.push({
+    for (const arista of this.aristas) {
+      elementos.push({
         group: 'edges',
         data: {
-          id: edge.id,
-          source: edge.from,
-          target: edge.to,
-          weight: edge.weight,
-          label: String(edge.weight)
+          id: arista.id,
+          source: arista.origen,
+          target: arista.destino,
+          weight: arista.peso,
+          label: String(arista.peso)
         }
       });
     }
 
-    return elements;
+    return elementos;
   }
 
   /**
@@ -203,77 +215,75 @@ export class Graph {
    * Permite ordenar visualmente los nodos en capas de izquierda a derecha.
    * @returns {Map<string, number>}
    */
-  computeTopologicalRanks() {
-    const ranks = new Map(this.nodes.map(n => [n, 0]));
-    const inDegree = new Map(this.nodes.map(n => [n, 0]));
-    const adj = this.getAdjacencyList();
+  calcularRangosTopologicos() {
+    const rangos = new Map(this.nodos.map(n => [n, 0]));
+    const gradoEntrada = new Map(this.nodos.map(n => [n, 0]));
+    const adyacencia = this.obtenerListaAdyacencia();
 
-    for (const edge of this.edges) {
-      inDegree.set(edge.to, (inDegree.get(edge.to) || 0) + 1);
+    for (const arista of this.aristas) {
+      gradoEntrada.set(arista.destino, (gradoEntrada.get(arista.destino) || 0) + 1);
     }
 
-    // Cola de nodos con inDegree 0
-    const queue = [];
-    for (const node of this.nodes) {
-      if (inDegree.get(node) === 0) {
-        queue.push(node);
-        ranks.set(node, 0);
+    // Cola de nodos con grado de entrada 0
+    const cola = [];
+    for (const nodo of this.nodos) {
+      if (gradoEntrada.get(nodo) === 0) {
+        cola.push(nodo);
+        rangos.set(nodo, 0);
       }
     }
 
     // Recorrido topológico para calcular distancias máximas en niveles
-    while (queue.length > 0) {
-      const curr = queue.shift();
-      const currRank = ranks.get(curr);
-      const neighbors = adj[curr] || [];
+    while (cola.length > 0) {
+      const actual = cola.shift();
+      const rangoActual = rangos.get(actual);
+      const vecinos = adyacencia[actual] || [];
 
-      for (const { to } of neighbors) {
-        const nextRank = Math.max(ranks.get(to) || 0, currRank + 1);
-        ranks.set(to, nextRank);
-        inDegree.set(to, inDegree.get(to) - 1);
-        if (inDegree.get(to) === 0) {
-          queue.push(to);
+      for (const vecino of vecinos) {
+        const destino = vecino.destino !== undefined ? vecino.destino : vecino.to;
+        const siguienteRango = Math.max(rangos.get(destino) || 0, rangoActual + 1);
+        rangos.set(destino, siguienteRango);
+        gradoEntrada.set(destino, gradoEntrada.get(destino) - 1);
+        if (gradoEntrada.get(destino) === 0) {
+          cola.push(destino);
         }
       }
     }
 
-    // Si algún nodo quedó aislado o con inDegree distinto, asignar índice basado en su posición
-    this.nodes.forEach((node, idx) => {
-      if (!ranks.has(node) || Number.isNaN(ranks.get(node))) {
-        ranks.set(node, Math.floor(idx / 2));
+    this.nodos.forEach((nodo, indice) => {
+      if (!rangos.has(nodo) || Number.isNaN(rangos.get(nodo))) {
+        rangos.set(nodo, Math.floor(indice / 2));
       }
     });
 
-    return ranks;
+    return rangos;
   }
 
   /**
    * Carga un ejemplo de 8 nodos (A a H) con un único camino mínimo de A a H.
    * Camino mínimo: A -> B -> E -> G -> H (costo 15).
-   * Incluye una relajación (A->D = 9 mejora a 7 por B->D, G = 14 mejora a 12
-   * por E->G) y varias aristas descartadas, para mostrar cada caso del algoritmo.
    */
-  loadDemonstrationExample() {
-    this.setNodes(8);
+  cargarEjemploDemostracion() {
+    this.establecerNodos(8);
 
-    const demoEdges = [
-      { from: 'A', to: 'B', weight: 4 },
-      { from: 'A', to: 'C', weight: 5 },
-      { from: 'A', to: 'D', weight: 9 },
-      { from: 'B', to: 'D', weight: 3 },
-      { from: 'C', to: 'D', weight: 3 },
-      { from: 'B', to: 'E', weight: 6 },
-      { from: 'B', to: 'F', weight: 8 },
-      { from: 'C', to: 'F', weight: 6 },
-      { from: 'D', to: 'G', weight: 7 },
-      { from: 'E', to: 'G', weight: 2 },
-      { from: 'F', to: 'G', weight: 2 },
-      { from: 'D', to: 'H', weight: 12 },
-      { from: 'G', to: 'H', weight: 3 }
+    const aristasDemo = [
+      { origen: 'A', destino: 'B', peso: 4 },
+      { origen: 'A', destino: 'C', peso: 5 },
+      { origen: 'A', destino: 'D', peso: 9 },
+      { origen: 'B', destino: 'D', peso: 3 },
+      { origen: 'C', destino: 'D', peso: 3 },
+      { origen: 'B', destino: 'E', peso: 6 },
+      { origen: 'B', destino: 'F', peso: 8 },
+      { origen: 'C', destino: 'F', peso: 6 },
+      { origen: 'D', destino: 'G', peso: 7 },
+      { origen: 'E', destino: 'G', peso: 2 },
+      { origen: 'F', destino: 'G', peso: 2 },
+      { origen: 'D', destino: 'H', peso: 12 },
+      { origen: 'G', destino: 'H', peso: 3 }
     ];
 
-    for (const e of demoEdges) {
-      this.addEdge(e.from, e.to, e.weight);
+    for (const a of aristasDemo) {
+      this.agregarArista(a.origen, a.destino, a.peso);
     }
   }
 }
