@@ -1,5 +1,5 @@
 /**
- * validation.js
+ * validacion.js
  * Módulo de validación de entradas, pesos, nodos, aristas duplicadas
  * y detección manual de ciclos en grafos dirigidos usando DFS.
  * 
@@ -9,114 +9,111 @@
 /**
  * Valida la cantidad de nodos ingresada por el usuario.
  * Restricciones académicas: 7 <= n <= 16, entero positivo.
- * @param {any} rawValue 
- * @returns {{ isValid: boolean, error: string | null, value?: number }}
+ * @param {any} valorCrudo 
+ * @returns {{ esValido: boolean, error: string | null, valor?: number }}
  */
-export function validateNodeCount(rawValue) {
-  if (rawValue === undefined || rawValue === null || String(rawValue).trim() === '') {
-    return { isValid: false, error: 'Debe ingresar un número de nodos.' };
+export function validarCantidadNodos(valorCrudo) {
+  if (valorCrudo === undefined || valorCrudo === null || String(valorCrudo).trim() === '') {
+    return { esValido: false, error: 'Debe ingresar un número de nodos.' };
   }
 
-  const trimmed = String(rawValue).trim();
+  const limpio = String(valorCrudo).trim();
 
   // Comprobar que solo contenga dígitos enteros
-  if (!/^\d+$/.test(trimmed)) {
+  if (!/^\d+$/.test(limpio)) {
     return {
-      isValid: false,
+      esValido: false,
       error: 'La cantidad de nodos debe ser un número entero sin decimales ni caracteres extraños.'
     };
   }
 
-  const num = Number(trimmed);
+  const numero = Number(limpio);
 
-  if (Number.isNaN(num)) {
-    return { isValid: false, error: 'Valor numérico no válido.' };
-  }
-
-  if (num < 7) {
+  if (numero < 7) {
     return {
-      isValid: false,
-      error: `La cantidad mínima requerida es 7 nodos (ingresó ${num}).`
+      esValido: false,
+      error: `La cantidad mínima requerida es 7 nodos (ingresó ${numero}).`
     };
   }
 
-  if (num > 16) {
+  if (numero > 16) {
     return {
-      isValid: false,
-      error: `La cantidad máxima permitida es 16 nodos (ingresó ${num}).`
+      esValido: false,
+      error: `La cantidad máxima permitida es 16 nodos (ingresó ${numero}).`
     };
   }
 
-  return { isValid: true, error: null, value: num };
+  return { esValido: true, error: null, valor: numero };
 }
 
 /**
  * Valida el peso de una arista.
  * Restricciones: entero positivo mayor a cero (w >= 1).
- * @param {any} rawWeight 
- * @returns {{ isValid: boolean, error: string | null, value?: number }}
+ * @param {any} pesoCrudo 
+ * @returns {{ esValido: boolean, error: string | null, valor?: number }}
  */
-export function validateEdgeWeight(rawWeight) {
-  if (rawWeight === undefined || rawWeight === null || String(rawWeight).trim() === '') {
-    return { isValid: false, error: 'Debe ingresar el peso de la arista.' };
+export function validarPesoArista(pesoCrudo) {
+  if (pesoCrudo === undefined || pesoCrudo === null || String(pesoCrudo).trim() === '') {
+    return { esValido: false, error: 'Debe ingresar el peso de la arista.' };
   }
 
-  const trimmed = String(rawWeight).trim();
+  const limpio = String(pesoCrudo).trim();
 
   // Comprobar que sea un número entero
-  if (!/^\d+$/.test(trimmed)) {
+  if (!/^\d+$/.test(limpio)) {
     return {
-      isValid: false,
+      esValido: false,
       error: 'El peso debe ser un número entero positivo (sin decimales ni signos negativos).'
     };
   }
 
-  const weight = Number(trimmed);
+  const peso = Number(limpio);
 
-  if (weight <= 0) {
+  if (peso <= 0) {
     return {
-      isValid: false,
+      esValido: false,
       error: 'El peso debe ser un número entero estrictamente mayor que cero (w ≥ 1).'
     };
   }
 
-  return { isValid: true, error: null, value: weight };
+  return { esValido: true, error: null, valor: peso };
 }
 
 /**
  * Encuentra un camino dirigido entre dos nodos usando búsqueda en profundidad (DFS) manual.
  * Retorna la secuencia de nodos si existe un camino, o null si no existe.
- * @param {Record<string, Array<{ to: string, weight: number }>>} adjacencyList 
- * @param {string} startNode 
- * @param {string} targetNode 
+ * @param {Record<string, Array<{ destino: string, peso: number }>>} listaAdyacencia 
+ * @param {string} nodoInicio 
+ * @param {string} nodoObjetivo 
  * @returns {string[] | null}
  */
-export function findDirectedPathDFS(adjacencyList, startNode, targetNode) {
-  const visited = new Set();
-  const parentMap = new Map();
-  const stack = [startNode];
-  visited.add(startNode);
+export function buscarCaminoDirigidoDFS(listaAdyacencia, nodoInicio, nodoObjetivo) {
+  const visitados = new Set();
+  const mapaPadres = new Map();
+  const pila = [nodoInicio];
+  visitados.add(nodoInicio);
 
-  while (stack.length > 0) {
-    const current = stack.pop();
+  while (pila.length > 0) {
+    const actual = pila.pop();
 
-    if (current === targetNode) {
-      // Reconstruir el camino desde targetNode hasta startNode
-      const path = [];
-      let curr = targetNode;
-      while (curr !== undefined) {
-        path.push(curr);
-        curr = parentMap.get(curr);
+    if (actual === nodoObjetivo) {
+      // Reconstruir el camino desde nodoObjetivo hasta nodoInicio
+      const camino = [];
+      let pasoActual = nodoObjetivo;
+      while (pasoActual !== undefined) {
+        camino.push(pasoActual);
+        pasoActual = mapaPadres.get(pasoActual);
       }
-      return path.reverse();
+      return camino.reverse();
     }
 
-    const neighbors = adjacencyList[current] || [];
-    for (const neighbor of neighbors) {
-      if (!visited.has(neighbor.to)) {
-        visited.add(neighbor.to);
-        parentMap.set(neighbor.to, current);
-        stack.push(neighbor.to);
+    const vecinos = listaAdyacencia[actual] || [];
+    for (const vecino of vecinos) {
+      const destinoVecino = vecino.destino !== undefined ? vecino.destino : vecino.to;
+      if (!visitados.has(destinoVecino)) {
+        visitados.add(destinoVecino);
+        mapaPadres.set(destinoVecino, actual);
+        pila.push(destinoVecino);
       }
     }
   }
@@ -133,98 +130,96 @@ export function findDirectedPathDFS(adjacencyList, startNode, targetNode) {
  * 4. Que el peso sea válido.
  * 5. Que la arista NO produzca un ciclo dirigido (usando DFS manual).
  * 
- * @param {object} graph - Instancia de Graph
- * @param {string} from - Nodo origen
- * @param {string} to - Nodo destino
- * @param {any} rawWeight - Peso sin validar
- * @returns {{ isValid: boolean, error: string | null, weight?: number, cyclePath?: string[] }}
+ * @param {object} grafo - Instancia de Grafo
+ * @param {string} origen - Nodo origen
+ * @param {string} destino - Nodo destino
+ * @param {any} pesoCrudo - Peso sin validar
+ * @returns {{ esValido: boolean, error: string | null, peso?: number, caminoCiclo?: string[] }}
  */
-export function validateNewEdge(graph, from, to, rawWeight) {
-  if (!from || !to) {
-    return { isValid: false, error: 'Debe seleccionar un nodo de origen y un nodo de destino.' };
+export function validarNuevaArista(grafo, origen, destino, pesoCrudo) {
+  if (!origen || !destino) {
+    return { esValido: false, error: 'Debe seleccionar un nodo de origen y un nodo de destino.' };
   }
 
-  const nodes = graph.getNodes();
-  if (!nodes.includes(from) || !nodes.includes(to)) {
-    return { isValid: false, error: 'Los nodos seleccionados no existen en el grafo actual.' };
+  const nodos = grafo.obtenerNodos();
+  if (!nodos.includes(origen) || !nodos.includes(destino)) {
+    return { esValido: false, error: 'Los nodos seleccionados no existen en el grafo actual.' };
   }
 
   // 1. No autoaristas (u === v)
-  if (from === to) {
+  if (origen === destino) {
     return {
-      isValid: false,
-      error: `No se permiten autoaristas (un vértice no puede conectarse consigo mismo: ${from} → ${to}).`
+      esValido: false,
+      error: `No se permiten autoaristas (un vértice no puede conectarse consigo mismo: ${origen} → ${destino}).`
     };
   }
 
   // 2. No aristas duplicadas en la misma dirección
-  if (graph.hasEdge(from, to)) {
+  if (grafo.existeArista(origen, destino)) {
     return {
-      isValid: false,
-      error: `Ya existe una arista dirigida de ${from} hacia ${to}.`
+      esValido: false,
+      error: `Ya existe una arista dirigida de ${origen} hacia ${destino}.`
     };
   }
 
   // 3. Validar peso
-  const weightVal = validateEdgeWeight(rawWeight);
-  if (!weightVal.isValid) {
-    return { isValid: false, error: weightVal.error };
+  const validacionPeso = validarPesoArista(pesoCrudo);
+  if (!validacionPeso.esValido) {
+    return { esValido: false, error: validacionPeso.error };
   }
 
   // 4. Detección manual de ciclos mediante DFS
-  // Si agregamos la arista from -> to, se creará un ciclo si y solo si ya existe
-  // un camino dirigido previo desde 'to' hacia 'from'.
-  const currentAdj = graph.getAdjacencyList();
-  const existingPath = findDirectedPathDFS(currentAdj, to, from);
+  // Si agregamos la arista origen -> destino, se creará un ciclo si y solo si ya existe
+  // un camino dirigido previo desde 'destino' hacia 'origen'.
+  const adyacenciaActual = grafo.obtenerListaAdyacencia();
+  const caminoExistente = buscarCaminoDirigidoDFS(adyacenciaActual, destino, origen);
 
-  if (existingPath) {
-    // El camino previo existente es: to -> ... -> from
-    // Con la nueva arista from -> to, el ciclo cerrado completo es: to -> ... -> from -> to
-    const cycleNodes = [...existingPath, to];
-    const cycleFormatted = cycleNodes.join(' → ');
+  if (caminoExistente) {
+    const nodosCiclo = [...caminoExistente, destino];
+    const cicloFormateado = nodosCiclo.join(' → ');
     return {
-      isValid: false,
-      error: `No se puede agregar ${from} → ${to} porque formaría un ciclo dirigido: ${cycleFormatted}.`,
-      cyclePath: cycleNodes
+      esValido: false,
+      error: `No se puede agregar ${origen} → ${destino} porque formaría un ciclo dirigido: ${cicloFormateado}.`,
+      caminoCiclo: nodosCiclo
     };
   }
 
-  return { isValid: true, error: null, weight: weightVal.value };
+  return { esValido: true, error: null, peso: validacionPeso.valor };
 }
 
 /**
  * Valida los parámetros necesarios para ejecutar el algoritmo de Dijkstra.
- * @param {object} graph 
- * @param {string} origin 
- * @param {string} destination 
- * @returns {{ isValid: boolean, error: string | null }}
+ * @param {object} grafo 
+ * @param {string} origen 
+ * @param {string} destino 
+ * @returns {{ esValido: boolean, error: string | null }}
  */
-export function validateDijkstraStart(graph, origin, destination) {
-  const nodes = graph.getNodes();
-  const edges = graph.getEdges();
+export function validarInicioDijkstra(grafo, origen, destino) {
+  const nodos = grafo.obtenerNodos();
+  const aristas = grafo.obtenerAristas();
 
-  if (nodes.length === 0) {
-    return { isValid: false, error: 'Primero debe configurar y crear los nodos del grafo.' };
+  if (nodos.length === 0) {
+    return { esValido: false, error: 'Primero debe configurar y crear los nodos del grafo.' };
   }
 
-  if (edges.length === 0) {
-    return { isValid: false, error: 'El grafo debe tener al menos una arista para ejecutar Dijkstra.' };
+  if (aristas.length === 0) {
+    return { esValido: false, error: 'El grafo debe tener al menos una arista para ejecutar Dijkstra.' };
   }
 
-  if (!origin || !destination) {
-    return { isValid: false, error: 'Debe seleccionar tanto el nodo origen como el nodo destino.' };
+  if (!origen || !destino) {
+    return { esValido: false, error: 'Debe seleccionar tanto el nodo origen como el nodo destino.' };
   }
 
-  if (!nodes.includes(origin) || !nodes.includes(destination)) {
-    return { isValid: false, error: 'El nodo origen o destino seleccionado no pertenece al grafo.' };
+  if (!nodos.includes(origen) || !nodos.includes(destino)) {
+    return { esValido: false, error: 'El nodo origen o destino seleccionado no pertenece al grafo.' };
   }
 
-  if (origin === destination) {
+  if (origen === destino) {
     return {
-      isValid: false,
+      esValido: false,
       error: 'El vértice origen y el vértice destino deben ser diferentes para calcular el camino.'
     };
   }
 
-  return { isValid: true, error: null };
+  return { esValido: true, error: null };
 }
