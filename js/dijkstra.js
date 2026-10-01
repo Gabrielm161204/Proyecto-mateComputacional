@@ -7,139 +7,181 @@
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
  */
 
-import { reconstructPath, getPathEdges } from './paths.js';
+import { reconstruirCamino, obtenerAristasDelCamino } from './caminos.js';
 
 /**
  * Ejecuta Dijkstra y devuelve la lista ordenada de pasos.
  * Cada paso guarda una copia del estado (distancias, predecesores, visitados)
  * para poder mostrarlo sin recalcular.
  *
- * @param {object} graph - Instancia de Graph (getNodes, getOutgoingEdges)
- * @param {string} origin
- * @param {string} destination
+ * @param {object} grafo - Instancia de Grafo (obtenerNodos, obtenerAristasSalientes)
+ * @param {string} origen
+ * @param {string} destino
  * @returns {Array<object>}
  */
-export function runDijkstra(graph, origin, destination) {
-  const nodes = graph.getNodes();
-  const steps = [];
+export function ejecutarDijkstra(grafo, origen, destino) {
+  const nodos = grafo.obtenerNodos();
+  const pasos = [];
 
-  const distances = {};
-  const predecessors = {};
-  const visited = [];
+  const distancias = {};
+  const predecesores = {};
+  const visitados = [];
 
-  for (const node of nodes) {
-    distances[node] = Infinity;
-    predecessors[node] = null;
+  for (const nodo of nodos) {
+    distancias[nodo] = Infinity;
+    predecesores[nodo] = null;
   }
-  distances[origin] = 0;
+  distancias[origen] = 0;
 
   /** Registra un paso con una copia del estado actual. */
-  function pushStep(data) {
-    steps.push({
-      stepIndex: steps.length,
+  function registrarPaso(datos) {
+    pasos.push({
+      indicePaso: pasos.length,
+      stepIndex: pasos.length,
+      nodoActual: null,
       currentNode: null,
-      distances: { ...distances },
-      predecessors: { ...predecessors },
-      visited: [...visited],
+      distancias: { ...distancias },
+      distances: { ...distancias },
+      predecesores: { ...predecesores },
+      predecessors: { ...predecesores },
+      visitados: [...visitados],
+      visited: [...visitados],
+      resaltado: { nodoObjetivo: null, aristaEvaluada: null, aristaMejorada: null, aristasDelCamino: [] },
       highlight: { targetNode: null, evaluatingEdge: null, improvedEdge: null, pathEdges: [] },
+      esFinal: false,
       isFinal: false,
+      datosFinales: null,
       finalData: null,
-      ...data
+      ...datos
     });
   }
 
   // Paso 0: inicialización
-  pushStep({
-    currentNode: origin,
+  registrarPaso({
+    nodoActual: origen,
+    currentNode: origen,
+    titulo: 'Fase inicial: inicialización de etiquetas',
     title: 'Fase inicial: inicialización de etiquetas',
-    explanation: `Se fija dist(${origin}) = 0 para el origen y dist(v) = ∞ para los demás vértices. El conjunto de visitados está vacío.`,
-    mathOperation: `dist(${origin}) = 0 | dist(v) = ∞ para todo v ≠ ${origin}`
+    explicacion: `Se fija dist(${origen}) = 0 para el origen y dist(v) = ∞ para los demás vértices. El conjunto de visitados está vacío.`,
+    explanation: `Se fija dist(${origen}) = 0 para el origen y dist(v) = ∞ para los demás vértices. El conjunto de visitados está vacío.`,
+    operacionMatematica: `dist(${origen}) = 0 | dist(v) = ∞ para todo v ≠ ${origen}`,
+    mathOperation: `dist(${origen}) = 0 | dist(v) = ∞ para todo v ≠ ${origen}`
   });
 
-  const unvisited = new Set(nodes);
-  let iteration = 1;
+  const noVisitados = new Set(nodos);
+  let iteracion = 1;
 
-  while (unvisited.size > 0) {
+  while (noVisitados.size > 0) {
     // Selección del vértice no visitado con menor distancia tentativa
-    let current = null;
-    let minDistance = Infinity;
-    for (const node of unvisited) {
-      if (distances[node] < minDistance) {
-        minDistance = distances[node];
-        current = node;
+    let actual = null;
+    let distanciaMinima = Infinity;
+    for (const nodo of noVisitados) {
+      if (distancias[nodo] < distanciaMinima) {
+        distanciaMinima = distancias[nodo];
+        actual = nodo;
       }
     }
 
     // Los vértices restantes no son alcanzables desde el origen
-    if (current === null) break;
+    if (actual === null) break;
 
-    pushStep({
-      currentNode: current,
-      title: `Iteración ${iteration}: selección del vértice ${current}`,
-      explanation: `Se selecciona ${current} por ser el vértice no visitado con menor distancia tentativa: dist(${current}) = ${distances[current]}. Se examinarán sus aristas salientes.`,
-      mathOperation: `u* = argmin { dist(u) | u ∈ NoVisitados } = ${current} (dist = ${distances[current]})`
+    registrarPaso({
+      nodoActual: actual,
+      currentNode: actual,
+      titulo: `Iteración ${iteracion}: selección del vértice ${actual}`,
+      title: `Iteración ${iteracion}: selección del vértice ${actual}`,
+      explicacion: `Se selecciona ${actual} por ser el vértice no visitado con menor distancia tentativa: dist(${actual}) = ${distancias[actual]}. Se examinarán sus aristas salientes.`,
+      explanation: `Se selecciona ${actual} por ser el vértice no visitado con menor distancia tentativa: dist(${actual}) = ${distancias[actual]}. Se examinarán sus aristas salientes.`,
+      operacionMatematica: `u* = argmin { dist(u) | u ∈ NoVisitados } = ${actual} (dist = ${distancias[actual]})`,
+      mathOperation: `u* = argmin { dist(u) | u ∈ NoVisitados } = ${actual} (dist = ${distancias[actual]})`
     });
 
     // Relajación de las aristas salientes
-    for (const edge of graph.getOutgoingEdges(current)) {
-      const neighbor = edge.to;
-      const currentDist = distances[current];
-      const newDist = currentDist + edge.weight;
-      const previousDist = distances[neighbor];
-      const prevStr = previousDist === Infinity ? '∞' : String(previousDist);
+    for (const arista of grafo.obtenerAristasSalientes(actual)) {
+      const vecino = arista.destino !== undefined ? arista.destino : arista.to;
+      const pesoArista = arista.peso !== undefined ? arista.peso : arista.weight;
+      const distActual = distancias[actual];
+      const nuevaDistancia = distActual + pesoArista;
+      const distanciaPrevia = distancias[vecino];
+      const previaTexto = distanciaPrevia === Infinity ? '∞' : String(distanciaPrevia);
 
-      if (newDist < previousDist) {
-        distances[neighbor] = newDist;
-        predecessors[neighbor] = current;
+      if (nuevaDistancia < distanciaPrevia) {
+        distancias[vecino] = nuevaDistancia;
+        predecesores[vecino] = actual;
 
-        pushStep({
-          currentNode: current,
-          title: `Relajación de arista: ${current} → ${neighbor}`,
-          explanation: `Se evalúa ${current} → ${neighbor} (peso ${edge.weight}). Nueva distancia: ${currentDist} + ${edge.weight} = ${newDist}. Como ${newDist} < ${prevStr}, se actualiza dist(${neighbor}) = ${newDist} y su predecesor pasa a ser ${current}.`,
-          mathOperation: `${currentDist} + ${edge.weight} = ${newDist} < dist(${neighbor}) [${prevStr}] ⇒ dist(${neighbor}) = ${newDist}, pred(${neighbor}) = ${current}`,
-          highlight: { targetNode: neighbor, evaluatingEdge: edge.id, improvedEdge: edge.id, pathEdges: [] }
+        registrarPaso({
+          nodoActual: actual,
+          currentNode: actual,
+          titulo: `Relajación de arista: ${actual} → ${vecino}`,
+          title: `Relajación de arista: ${actual} → ${vecino}`,
+          explicacion: `Se evalúa ${actual} → ${vecino} (peso ${pesoArista}). Nueva distancia: ${distActual} + ${pesoArista} = ${nuevaDistancia}. Como ${nuevaDistancia} < ${previaTexto}, se actualiza dist(${vecino}) = ${nuevaDistancia} y su predecesor pasa a ser ${actual}.`,
+          explanation: `Se evalúa ${actual} → ${vecino} (peso ${pesoArista}). Nueva distancia: ${distActual} + ${pesoArista} = ${nuevaDistancia}. Como ${nuevaDistancia} < ${previaTexto}, se actualiza dist(${vecino}) = ${nuevaDistancia} y su predecesor pasa a ser ${actual}.`,
+          operacionMatematica: `${distActual} + ${pesoArista} = ${nuevaDistancia} < dist(${vecino}) [${previaTexto}] ⇒ dist(${vecino}) = ${nuevaDistancia}, pred(${vecino}) = ${actual}`,
+          mathOperation: `${distActual} + ${pesoArista} = ${nuevaDistancia} < dist(${vecino}) [${previaTexto}] ⇒ dist(${vecino}) = ${nuevaDistancia}, pred(${vecino}) = ${actual}`,
+          resaltado: { nodoObjetivo: vecino, aristaEvaluada: arista.id, aristaMejorada: arista.id, aristasDelCamino: [] },
+          highlight: { targetNode: vecino, evaluatingEdge: arista.id, improvedEdge: arista.id, pathEdges: [] }
         });
       } else {
-        pushStep({
-          currentNode: current,
-          title: `Arista descartada: ${current} → ${neighbor}`,
-          explanation: `Se evalúa ${current} → ${neighbor} (peso ${edge.weight}). Distancia calculada: ${currentDist} + ${edge.weight} = ${newDist}. Como ${newDist} no es menor que ${previousDist}, no mejora el camino conocido y se mantiene dist(${neighbor}) = ${previousDist}.`,
-          mathOperation: `${currentDist} + ${edge.weight} = ${newDist} ≥ dist(${neighbor}) [${previousDist}] ⇒ sin cambios`,
-          highlight: { targetNode: neighbor, evaluatingEdge: edge.id, improvedEdge: null, pathEdges: [] }
+        registrarPaso({
+          nodoActual: actual,
+          currentNode: actual,
+          titulo: `Arista descartada: ${actual} → ${vecino}`,
+          title: `Arista descartada: ${actual} → ${vecino}`,
+          explicacion: `Se evalúa ${actual} → ${vecino} (peso ${pesoArista}). Distancia calculada: ${distActual} + ${pesoArista} = ${nuevaDistancia}. Como ${nuevaDistancia} no es menor que ${distanciaPrevia}, no mejora el camino conocido y se mantiene dist(${vecino}) = ${distanciaPrevia}.`,
+          explanation: `Se evalúa ${actual} → ${vecino} (peso ${pesoArista}). Distancia calculada: ${distActual} + ${pesoArista} = ${nuevaDistancia}. Como ${nuevaDistancia} no es menor que ${distanciaPrevia}, no mejora el camino conocido y se mantiene dist(${vecino}) = ${distanciaPrevia}.`,
+          operacionMatematica: `${distActual} + ${pesoArista} = ${nuevaDistancia} ≥ dist(${vecino}) [${distanciaPrevia}] ⇒ sin cambios`,
+          mathOperation: `${distActual} + ${pesoArista} = ${nuevaDistancia} ≥ dist(${vecino}) [${distanciaPrevia}] ⇒ sin cambios`,
+          resaltado: { nodoObjetivo: vecino, aristaEvaluada: arista.id, aristaMejorada: null, aristasDelCamino: [] },
+          highlight: { targetNode: vecino, evaluatingEdge: arista.id, improvedEdge: null, pathEdges: [] }
         });
       }
     }
 
     // Marcar como visitado
-    unvisited.delete(current);
-    visited.push(current);
+    noVisitados.delete(actual);
+    visitados.push(actual);
 
-    pushStep({
-      currentNode: current,
-      title: `Vértice ${current} marcado como visitado`,
-      explanation: `Se evaluaron todas las aristas salientes de ${current}. Su distancia mínima (${distances[current]}) ya es definitiva.`,
-      mathOperation: `Visitados = {${visited.join(', ')}}`
+    registrarPaso({
+      nodoActual: actual,
+      currentNode: actual,
+      titulo: `Vértice ${actual} marcado como visitado`,
+      title: `Vértice ${actual} marcado como visitado`,
+      explicacion: `Se evaluaron todas las aristas salientes de ${actual}. Su distancia mínima (${distancias[actual]}) ya es definitiva.`,
+      explanation: `Se evaluaron todas las aristas salientes de ${actual}. Su distancia mínima (${distancias[actual]}) ya es definitiva.`,
+      operacionMatematica: `Visitados = {${visitados.join(', ')}}`,
+      mathOperation: `Visitados = {${visitados.join(', ')}}`
     });
 
-    iteration++;
+    iteracion++;
   }
 
   // Paso final: reconstrucción del camino mínimo
-  const reachable = distances[destination] !== Infinity;
-  const path = reachable ? reconstructPath(predecessors, origin, destination, distances) : [];
+  const alcanzable = distancias[destino] !== Infinity;
+  const camino = alcanzable ? reconstruirCamino(predecesores, origen, destino, distancias) : [];
+  const aristasCamino = obtenerAristasDelCamino(camino);
 
-  pushStep({
+  registrarPaso({
+    titulo: 'Resultado final: camino mínimo',
     title: 'Resultado final: camino mínimo',
-    explanation: reachable
-      ? `Algoritmo completado. La distancia mínima de ${origin} a ${destination} es ${distances[destination]}, siguiendo los predecesores desde ${destination} hasta ${origin}.`
-      : `Algoritmo finalizado. No existe una ruta dirigida de ${origin} a ${destination} (distancia = ∞).`,
-    mathOperation: reachable
-      ? `dist(${origin} → ${destination}) = ${distances[destination]}`
-      : `dist(${origin} → ${destination}) = ∞`,
-    highlight: { targetNode: null, evaluatingEdge: null, improvedEdge: null, pathEdges: getPathEdges(path) },
+    explicacion: alcanzable
+      ? `Algoritmo completado. La distancia mínima de ${origen} a ${destino} es ${distancias[destino]}, siguiendo los predecesores desde ${destino} hasta ${origen}.`
+      : `Algoritmo finalizado. No existe una ruta dirigida de ${origen} a ${destino} (distancia = ∞).`,
+    explanation: alcanzable
+      ? `Algoritmo completado. La distancia mínima de ${origen} a ${destino} es ${distancias[destino]}, siguiendo los predecesores desde ${destino} hasta ${origen}.`
+      : `Algoritmo finalizado. No existe una ruta dirigida de ${origen} a ${destino} (distancia = ∞).`,
+    operacionMatematica: alcanzable
+      ? `dist(${origen} → ${destino}) = ${distancias[destino]}`
+      : `dist(${origen} → ${destino}) = ∞`,
+    mathOperation: alcanzable
+      ? `dist(${origen} → ${destino}) = ${distancias[destino]}`
+      : `dist(${origen} → ${destino}) = ∞`,
+    resaltado: { nodoObjetivo: null, aristaEvaluada: null, aristaMejorada: null, aristasDelCamino: aristasCamino },
+    highlight: { targetNode: null, evaluatingEdge: null, improvedEdge: null, pathEdges: aristasCamino },
+    esFinal: true,
     isFinal: true,
-    finalData: { reachable, distance: distances[destination], path, origin, destination }
+    datosFinales: { alcanzable, distancia: distancias[destino], camino, origen, destino, reachable: alcanzable, distance: distancias[destino], path: camino, origin: origen, destination: destino },
+    finalData: { reachable: alcanzable, distance: distancias[destino], path: camino, origin: origen, destination: destino, alcanzable, distancia: distancias[destino], camino }
   });
 
-  return steps;
+  return pasos;
 }
