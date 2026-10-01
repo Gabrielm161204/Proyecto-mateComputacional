@@ -1,5 +1,5 @@
 /**
- * ui.js
+ * interfaz.js
  * Módulo para la manipulación del DOM, renderizado de Cytoscape.js,
  * actualización de tablas, matrices, listas de adyacencia y control visual
  * de las etapas pedagógicas del algoritmo de Dijkstra.
@@ -7,33 +7,33 @@
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
  */
 
-export class UIManager {
+export class GestorInterfaz {
   constructor() {
     this.cy = null;
-    this.toastTimeout = null;
+    this.temporizadorMensaje = null;
   }
 
   /**
    * Inicializa la instancia de Cytoscape.js en el contenedor designado.
-   * Configura estilos visuales profesionales con soporte para DAGs,
+   * Configura estilos visuales con soporte para DAGs,
    * etiquetas centradas, flechas dirigidas y estilos de resaltado de estados.
-   * @param {string} containerId - ID del elemento contenedor en el DOM
+   * @param {string} idContenedor - ID del elemento contenedor en el DOM
    */
-  initCytoscape(containerId) {
-    const container = document.getElementById(containerId);
-    if (!container) {
-      console.error(`Contenedor #${containerId} no encontrado para Cytoscape.`);
+  inicializarCytoscape(idContenedor) {
+    const contenedor = document.getElementById(idContenedor);
+    if (!contenedor) {
+      console.error(`Contenedor #${idContenedor} no encontrado para Cytoscape.`);
       return;
     }
 
     if (typeof cytoscape === 'undefined') {
       console.error('Cytoscape.js no está cargado. Verifique la conexión a Internet o el CDN.');
-      this.showMessage('Error: No se pudo cargar Cytoscape.js desde el CDN.', 'error');
+      this.mostrarMensaje('Error: No se pudo cargar Cytoscape.js desde el CDN.', 'error');
       return;
     }
 
     this.cy = cytoscape({
-      container,
+      container: contenedor,
       elements: [],
       boxSelectionEnabled: false,
       autounselectify: true,
@@ -115,7 +115,6 @@ export class UIManager {
           }
         },
 
-
         // --- Estilo Base de Aristas ---
         {
           selector: 'edge',
@@ -164,7 +163,6 @@ export class UIManager {
           }
         },
 
-
         // --- Arista que Pertenece a una Ruta Mínima Final ---
         {
           selector: 'edge.shortest-path',
@@ -182,36 +180,35 @@ export class UIManager {
 
   /**
    * Renderiza los elementos del grafo en Cytoscape y ajusta el zoom al contenido.
-   * @param {Array<object>} elements - Elementos generados por graph.toCytoscapeElements()
+   * @param {Array<object>} elementos - Elementos generados por grafo.aElementosCytoscape()
    */
-  renderGraph(elements) {
+  renderizarGrafo(elementos) {
     if (!this.cy) return;
 
     this.cy.batch(() => {
       this.cy.elements().remove();
-      this.cy.add(elements);
+      this.cy.add(elementos);
     });
 
-    // Ajustar vista respetando márgenes
     this.cy.fit(undefined, 35);
   }
 
   /**
    * Restablece el centrado y zoom del grafo en Cytoscape.
    */
-  fitGraph() {
+  ajustarVistaGrafo() {
     if (!this.cy) return;
     this.cy.fit(undefined, 35);
   }
 
   /**
-   * Actualiza visualmente el grafo de Cytoscape reflejando el estado de un paso de Dijkstra.
-   * @param {object} step - Objeto de paso con datos de resaltado
-   * @param {string} origin - Vértice origen
-   * @param {string} destination - Vértice destino
+   * Actualiza visualmente el grafo reflejando el estado de un paso de Dijkstra.
+   * @param {object} paso - Objeto de paso con datos de resaltado
+   * @param {string} origen - Vértice origen
+   * @param {string} destino - Vértice destino
    */
-  applyStepVisualization(step, origin, destination) {
-    if (!this.cy || !step) return;
+  aplicarVisualizacionPaso(paso, origen, destino) {
+    if (!this.cy || !paso) return;
 
     this.cy.batch(() => {
       // 1. Limpiar clases dinámicas previas
@@ -219,60 +216,66 @@ export class UIManager {
       this.cy.edges().removeClass('evaluating improved shortest-path');
 
       // 2. Resaltar origen y destino estructurales
-      if (origin) {
-        const originNode = this.cy.getElementById(origin);
-        if (originNode.length > 0) originNode.addClass('origin');
+      if (origen) {
+        const nodoOrigen = this.cy.getElementById(origen);
+        if (nodoOrigen.length > 0) nodoOrigen.addClass('origin');
       }
-      if (destination) {
-        const destNode = this.cy.getElementById(destination);
-        if (destNode.length > 0) destNode.addClass('destination');
+      if (destino) {
+        const nodoDestino = this.cy.getElementById(destino);
+        if (nodoDestino.length > 0) nodoDestino.addClass('destination');
       }
 
       // 3. Marcar nodos visitados
-      if (Array.isArray(step.visited)) {
-        for (const v of step.visited) {
-          const vNode = this.cy.getElementById(v);
-          if (vNode.length > 0 && v !== origin && v !== destination) {
-            vNode.addClass('visited');
+      const visitados = paso.visitados || paso.visited || [];
+      if (Array.isArray(visitados)) {
+        for (const v of visitados) {
+          const nodoV = this.cy.getElementById(v);
+          if (nodoV.length > 0 && v !== origen && v !== destino) {
+            nodoV.addClass('visited');
           }
         }
       }
 
       // 4. Marcar nodo actual
-      if (step.currentNode) {
-        const cNode = this.cy.getElementById(step.currentNode);
-        if (cNode.length > 0) {
-          cNode.addClass('current');
+      const nodoActual = paso.nodoActual || paso.currentNode;
+      if (nodoActual) {
+        const nodoActualElem = this.cy.getElementById(nodoActual);
+        if (nodoActualElem.length > 0) {
+          nodoActualElem.addClass('current');
         }
       }
 
       // 5. Marcar vecino en evaluación
-      if (step.highlight && step.highlight.targetNode) {
-        const tNode = this.cy.getElementById(step.highlight.targetNode);
-        if (tNode.length > 0) {
-          tNode.addClass('target-evaluating');
+      const resaltado = paso.resaltado || paso.highlight || {};
+      const nodoObjetivo = resaltado.nodoObjetivo || resaltado.targetNode;
+      if (nodoObjetivo) {
+        const nodoObjElem = this.cy.getElementById(nodoObjetivo);
+        if (nodoObjElem.length > 0) {
+          nodoObjElem.addClass('target-evaluating');
         }
       }
 
       // 6. Resaltar arista en evaluación
-      if (step.highlight && step.highlight.evaluatingEdge) {
-        const edgeId = step.highlight.evaluatingEdge;
-        const edgeElem = this.cy.getElementById(edgeId);
-        if (edgeElem.length > 0) {
-          if (step.highlight.improvedEdge) {
-            edgeElem.addClass('improved');
+      const aristaEvaluada = resaltado.aristaEvaluada || resaltado.evaluatingEdge;
+      if (aristaEvaluada) {
+        const aristaElem = this.cy.getElementById(aristaEvaluada);
+        if (aristaElem.length > 0) {
+          if (resaltado.aristaMejorada || resaltado.improvedEdge) {
+            aristaElem.addClass('improved');
           } else {
-            edgeElem.addClass('evaluating');
+            aristaElem.addClass('evaluating');
           }
         }
       }
 
       // 7. Resaltar el camino mínimo final si es el paso final
-      if (step.isFinal && step.highlight && Array.isArray(step.highlight.pathEdges)) {
-        for (const edgeId of step.highlight.pathEdges) {
-          const pathEdge = this.cy.getElementById(edgeId);
-          if (pathEdge.length > 0) {
-            pathEdge.addClass('shortest-path');
+      const esFinal = paso.esFinal || paso.isFinal;
+      const aristasCamino = resaltado.aristasDelCamino || resaltado.pathEdges || [];
+      if (esFinal && Array.isArray(aristasCamino)) {
+        for (const idArista of aristasCamino) {
+          const aristaCaminoElem = this.cy.getElementById(idArista);
+          if (aristaCaminoElem.length > 0) {
+            aristaCaminoElem.addClass('shortest-path');
           }
         }
       }
@@ -281,297 +284,322 @@ export class UIManager {
 
   /**
    * Actualiza las opciones de todos los selectores de nodos en el DOM.
-   * @param {string[]} nodes - Lista de etiquetas de nodos
+   * @param {string[]} nodos - Lista de etiquetas de nodos
    */
-  updateNodeSelectors(nodes) {
-    const selectors = [
-      { id: 'edge-from', placeholder: 'Origen...' },
-      { id: 'edge-to', placeholder: 'Destino...' },
-      { id: 'dijkstra-origin', placeholder: 'Seleccionar origen...' },
-      { id: 'dijkstra-destination', placeholder: 'Seleccionar destino...' }
+  actualizarSelectoresNodos(nodos) {
+    const selectores = [
+      { id: 'edge-from', marcador: 'Origen...' },
+      { id: 'edge-to', marcador: 'Destino...' },
+      { id: 'dijkstra-origin', marcador: 'Seleccionar origen...' },
+      { id: 'dijkstra-destination', marcador: 'Seleccionar destino...' }
     ];
 
-    for (const { id, placeholder } of selectors) {
+    for (const { id, marcador } of selectores) {
       const select = document.getElementById(id);
       if (!select) continue;
 
-      const currentVal = select.value;
-      select.innerHTML = `<option value="">${placeholder}</option>`;
+      const valorActual = select.value;
+      select.innerHTML = `<option value="">${marcador}</option>`;
 
-      for (const node of nodes) {
-        const opt = document.createElement('option');
-        opt.value = node;
-        opt.textContent = `Vértice ${node}`;
-        select.appendChild(opt);
+      for (const nodo of nodos) {
+        const opcion = document.createElement('option');
+        opcion.value = nodo;
+        opcion.textContent = `Vértice ${nodo}`;
+        select.appendChild(opcion);
       }
 
       // Preservar selección previa si aún existe
-      if (nodes.includes(currentVal)) {
-        select.value = currentVal;
+      if (nodos.includes(valorActual)) {
+        select.value = valorActual;
       }
     }
   }
 
   /**
    * Actualiza la tabla visual de aristas agregadas en la sección manual.
-   * @param {Array<{ id: string, from: string, to: string, weight: number }>} edges 
-   * @param {Function} onDeleteEdge - Callback para eliminar arista
+   * @param {Array<{ id: string, origen: string, destino: string, peso: number }>} aristas 
+   * @param {Function} alEliminarArista - Callback para eliminar arista
    */
-  updateEdgeTable(edges, onDeleteEdge) {
-    const tbody = document.getElementById('edges-table-body');
-    const countBadge = document.getElementById('edges-count-badge');
-    if (!tbody) return;
+  actualizarTablaAristas(aristas, alEliminarArista) {
+    const cuerpoTabla = document.getElementById('edges-table-body');
+    const placaContador = document.getElementById('edges-count-badge');
+    if (!cuerpoTabla) return;
 
-    if (countBadge) {
-      countBadge.textContent = `${edges.length} arista(s)`;
+    if (placaContador) {
+      placaContador.textContent = `${aristas.length} arista(s)`;
     }
 
-    if (edges.length === 0) {
-      tbody.innerHTML = `
+    if (aristas.length === 0) {
+      cuerpoTabla.innerHTML = `
         <tr class="empty-row">
           <td colspan="4" class="text-center text-muted py-3">
-            No hay aristas agregadas. Use el formulario superior o la generación aleatoria.
+            No hay aristas agregadas. Use el formulario superior para agregar aristas.
           </td>
         </tr>
       `;
       return;
     }
 
-    tbody.innerHTML = '';
-    edges.forEach((edge, index) => {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><span class="badge badge-node">${edge.from}</span></td>
-        <td><span class="badge badge-node">${edge.to}</span></td>
-        <td><strong>${edge.weight}</strong></td>
+    cuerpoTabla.innerHTML = '';
+    aristas.forEach((arista) => {
+      const origen = arista.origen !== undefined ? arista.origen : arista.from;
+      const destino = arista.destino !== undefined ? arista.destino : arista.to;
+      const peso = arista.peso !== undefined ? arista.peso : arista.weight;
+
+      const fila = document.createElement('tr');
+      fila.innerHTML = `
+        <td><span class="badge badge-node">${origen}</span></td>
+        <td><span class="badge badge-node">${destino}</span></td>
+        <td><strong>${peso}</strong></td>
         <td>
-          <button class="btn btn-sm btn-outline-danger delete-edge-btn" data-from="${edge.from}" data-to="${edge.to}" title="Eliminar arista">
+          <button class="btn btn-sm btn-outline-danger delete-edge-btn" data-origen="${origen}" data-destino="${destino}" title="Eliminar arista">
             ✕
           </button>
         </td>
       `;
 
-      const deleteBtn = tr.querySelector('.delete-edge-btn');
-      if (deleteBtn && onDeleteEdge) {
-        deleteBtn.addEventListener('click', () => {
-          onDeleteEdge(edge.from, edge.to);
+      const botonEliminar = fila.querySelector('.delete-edge-btn');
+      if (botonEliminar && alEliminarArista) {
+        botonEliminar.addEventListener('click', () => {
+          alEliminarArista(origen, destino);
         });
       }
 
-      tbody.appendChild(tr);
+      cuerpoTabla.appendChild(fila);
     });
   }
 
   /**
    * Actualiza la representación textual de la Lista de Adyacencia.
-   * @param {Record<string, Array<{ to: string, weight: number }>>} adjList 
+   * @param {Record<string, Array<{ destino: string, peso: number }>>} listaAdyacencia 
    */
-  updateAdjacencyList(adjList) {
-    const container = document.getElementById('adjacency-list-content');
-    if (!container) return;
+  actualizarListaAdyacencia(listaAdyacencia) {
+    const contenedor = document.getElementById('adjacency-list-content');
+    if (!contenedor) return;
 
-    const nodes = Object.keys(adjList);
-    if (nodes.length === 0) {
-      container.innerHTML = '<p class="text-muted mb-0">Grafo vacío. Configure los nodos.</p>';
+    const nodos = Object.keys(listaAdyacencia);
+    if (nodos.length === 0) {
+      contenedor.innerHTML = '<p class="text-muted mb-0">Grafo vacío. Configure los nodos.</p>';
       return;
     }
 
     let html = '<div class="adj-list-grid">';
-    for (const node of nodes) {
-      const neighbors = adjList[node] || [];
-      const connectionsStr = neighbors.length > 0
-        ? neighbors.map(n => `<span class="adj-item">→ <strong>${n.to}</strong> <small>(peso: ${n.weight})</small></span>`).join(' ')
+    for (const nodo of nodos) {
+      const vecinos = listaAdyacencia[nodo] || [];
+      const conexionesTexto = vecinos.length > 0
+        ? vecinos.map(n => {
+            const dest = n.destino !== undefined ? n.destino : n.to;
+            const p = n.peso !== undefined ? n.peso : n.weight;
+            return `<span class="adj-item">→ <strong>${dest}</strong> <small>(peso: ${p})</small></span>`;
+          }).join(' ')
         : '<span class="text-muted"><small>sin conexiones salientes</small></span>';
 
       html += `
         <div class="adj-list-row">
-          <span class="badge badge-node mr-2">${node}</span>
-          <div class="adj-items-wrapper">${connectionsStr}</div>
+          <span class="badge badge-node mr-2">${nodo}</span>
+          <div class="adj-items-wrapper">${conexionesTexto}</div>
         </div>
       `;
     }
     html += '</div>';
-    container.innerHTML = html;
+    contenedor.innerHTML = html;
   }
 
   /**
    * Actualiza la Matriz de Pesos o Matriz de Adyacencia Ponderada.
-   * Representa valores sin conexión como "∞" o "—".
-   * @param {{ nodes: string[], matrix: Array<Array<number|null>> }} adjMatrixData 
+   * Representa valores sin conexión como "∞".
+   * @param {{ nodos: string[], matriz: Array<Array<number|null>> }} datosMatriz 
    */
-  updateAdjacencyMatrix(adjMatrixData) {
-    const container = document.getElementById('adjacency-matrix-content');
-    if (!container) return;
+  actualizarMatrizAdyacencia(datosMatriz) {
+    const contenedor = document.getElementById('adjacency-matrix-content');
+    if (!contenedor) return;
 
-    const { nodes, matrix } = adjMatrixData;
-    if (nodes.length === 0) {
-      container.innerHTML = '<p class="text-muted mb-0">Grafo vacío. Configure los nodos.</p>';
+    const nodos = datosMatriz.nodos || datosMatriz.nodes || [];
+    const matriz = datosMatriz.matriz || datosMatriz.matrix || [];
+    if (nodos.length === 0) {
+      contenedor.innerHTML = '<p class="text-muted mb-0">Grafo vacío. Configure los nodos.</p>';
       return;
     }
 
     let html = '<div class="table-responsive"><table class="matrix-table">';
-    // Fila de encabezado
     html += '<thead><tr><th class="matrix-corner">V\\V</th>';
-    for (const node of nodes) {
-      html += `<th>${node}</th>`;
+    for (const nodo of nodos) {
+      html += `<th>${nodo}</th>`;
     }
     html += '</tr></thead><tbody>';
 
-    // Filas de la matriz
-    for (let i = 0; i < nodes.length; i++) {
-      html += `<tr><th>${nodes[i]}</th>`;
-      for (let j = 0; j < nodes.length; j++) {
-        const val = matrix[i][j];
+    for (let i = 0; i < nodos.length; i++) {
+      html += `<tr><th>${nodos[i]}</th>`;
+      for (let j = 0; j < nodos.length; j++) {
+        const valor = matriz[i][j];
         if (i === j) {
           html += '<td class="matrix-diag">0</td>';
-        } else if (val === null || val === undefined) {
+        } else if (valor === null || valor === undefined) {
           html += '<td class="matrix-inf">∞</td>';
         } else {
-          html += `<td class="matrix-val">${val}</td>`;
+          html += `<td class="matrix-val">${valor}</td>`;
         }
       }
       html += '</tr>';
     }
 
     html += '</tbody></table></div>';
-    container.innerHTML = html;
+    contenedor.innerHTML = html;
   }
 
   /**
    * Actualiza el panel de información didáctica y la tabla de etiquetas para el paso actual.
-   * @param {object} step - Objeto de paso generado por dijkstra.js
-   * @param {object} progress - Progreso del step manager: { current, total, percentage }
-   * @param {string} origin - Vértice origen
-   * @param {string} destination - Vértice destino
+   * @param {object} paso - Objeto de paso generado por dijkstra.js
+   * @param {object} progreso - Progreso del gestor de pasos: { actual, total, porcentaje }
+   * @param {string} origen - Vértice origen
    */
-  updateDijkstraStepView(step, progress, origin) {
-    if (!step) return;
+  actualizarVistaPasoDijkstra(paso, progreso, origen) {
+    if (!paso) return;
+
+    const actual = progreso.actual !== undefined ? progreso.actual : progreso.current;
+    const total = progreso.total;
+    const porcentaje = progreso.porcentaje !== undefined ? progreso.porcentaje : progreso.percentage;
 
     // 1. Contador de pasos y barra de progreso
-    const stepBadge = document.getElementById('step-counter-badge');
-    const progressBar = document.getElementById('step-progress-bar');
-    if (stepBadge) {
-      stepBadge.textContent = `Paso ${progress.current} de ${progress.total}`;
+    const placaPaso = document.getElementById('step-counter-badge');
+    const barraProgreso = document.getElementById('step-progress-bar');
+    if (placaPaso) {
+      placaPaso.textContent = `Paso ${actual} de ${total}`;
     }
-    if (progressBar) {
-      progressBar.style.width = `${progress.percentage}%`;
+    if (barraProgreso) {
+      barraProgreso.style.width = `${porcentaje}%`;
     }
 
     // 2. Título de iteración y nodo actual
-    const iterTitle = document.getElementById('step-iteration-title');
-    const currentNodeBadge = document.getElementById('step-current-node-badge');
-    if (iterTitle) {
-      iterTitle.textContent = step.title;
+    const tituloIteracion = document.getElementById('step-iteration-title');
+    const placaNodoActual = document.getElementById('step-current-node-badge');
+    if (tituloIteracion) {
+      tituloIteracion.textContent = paso.titulo || paso.title;
     }
-    if (currentNodeBadge) {
-      if (step.currentNode) {
-        currentNodeBadge.textContent = `Vértice actual: ${step.currentNode}`;
-        currentNodeBadge.style.display = 'inline-block';
+    const nodoActual = paso.nodoActual || paso.currentNode;
+    if (placaNodoActual) {
+      if (nodoActual) {
+        placaNodoActual.textContent = `Vértice actual: ${nodoActual}`;
+        placaNodoActual.style.display = 'inline-block';
       } else {
-        currentNodeBadge.style.display = 'none';
+        placaNodoActual.style.display = 'none';
       }
     }
 
     // 3. Explicación didáctica y operación matemática
-    const explanationEl = document.getElementById('step-explanation-text');
-    const mathEl = document.getElementById('step-math-operation');
-    if (explanationEl) {
-      explanationEl.textContent = step.explanation;
+    const textoExplicacion = document.getElementById('step-explanation-text');
+    const operacionMatematica = document.getElementById('step-math-operation');
+    if (textoExplicacion) {
+      textoExplicacion.textContent = paso.explicacion || paso.explanation;
     }
-    if (mathEl) {
-      mathEl.textContent = step.mathOperation || '';
+    if (operacionMatematica) {
+      operacionMatematica.textContent = paso.operacionMatematica || paso.mathOperation || '';
     }
 
     // 4. Tabla de etiquetas de Dijkstra
-    this.updateDijkstraLabelsTable(step, origin);
+    this.actualizarTablaEtiquetasDijkstra(paso, origen);
 
     // 5. Panel de resultados finales
-    this.updateResultsSummary(step);
+    this.actualizarResumenResultados(paso);
   }
 
   /**
    * Actualiza la tabla de etiquetas (Vértice, Distancia acumulada, Predecesor, Estado).
-   * @param {object} step 
-   * @param {string} origin 
+   * @param {object} paso 
+   * @param {string} origen 
    */
-  updateDijkstraLabelsTable(step, origin) {
-    const tbody = document.getElementById('dijkstra-labels-body');
-    if (!tbody) return;
+  actualizarTablaEtiquetasDijkstra(paso, origen) {
+    const cuerpoTabla = document.getElementById('dijkstra-labels-body');
+    if (!cuerpoTabla) return;
 
-    const nodes = Object.keys(step.distances);
-    tbody.innerHTML = '';
+    const distancias = paso.distancias || paso.distances || {};
+    const predecesores = paso.predecesores || paso.predecessors || {};
+    const visitados = paso.visitados || paso.visited || [];
+    const nodoActual = paso.nodoActual || paso.currentNode;
+    const resaltado = paso.resaltado || paso.highlight || {};
+    const nodoObjetivo = resaltado.nodoObjetivo || resaltado.targetNode;
 
-    for (const node of nodes) {
-      const dist = step.distances[node];
-      const distStr = dist === Infinity ? '∞' : String(dist);
-      const predsStr = step.predecessors[node] || '—';
+    const nodos = Object.keys(distancias);
+    cuerpoTabla.innerHTML = '';
+
+    for (const nodo of nodos) {
+      const dist = distancias[nodo];
+      const distTexto = dist === Infinity ? '∞' : String(dist);
+      const predTexto = predecesores[nodo] || '—';
 
       // Determinar estado semántico del nodo
       let estado = '';
-      let badgeClass = '';
-      let rowHighlightClass = '';
+      let claseBadge = '';
+      let claseFila = '';
 
-      if (node === origin) {
+      if (nodo === origen) {
         estado = 'Origen';
-        badgeClass = 'badge-origin';
-      } else if (step.visited.includes(node)) {
+        claseBadge = 'badge-origin';
+      } else if (visitados.includes(nodo)) {
         estado = 'Visitado';
-        badgeClass = 'badge-visited';
+        claseBadge = 'badge-visited';
       } else if (dist === Infinity) {
         estado = 'Inalcanzable';
-        badgeClass = 'badge-unreachable';
+        claseBadge = 'badge-unreachable';
       } else {
         estado = 'Pendiente';
-        badgeClass = 'badge-pending';
+        claseBadge = 'badge-pending';
       }
 
-      if (node === step.currentNode) {
-        rowHighlightClass = 'table-row-current';
-      } else if (step.highlight && step.highlight.targetNode === node) {
-        rowHighlightClass = 'table-row-target';
+      if (nodo === nodoActual) {
+        claseFila = 'table-row-current';
+      } else if (nodoObjetivo === nodo) {
+        claseFila = 'table-row-target';
       }
 
-      const tr = document.createElement('tr');
-      if (rowHighlightClass) tr.className = rowHighlightClass;
+      const fila = document.createElement('tr');
+      if (claseFila) fila.className = claseFila;
 
-      tr.innerHTML = `
-        <td><strong class="node-letter">${node}</strong></td>
-        <td><span class="dist-val">${distStr}</span></td>
-        <td><span class="pred-val">${predsStr}</span></td>
-        <td><span class="badge ${badgeClass}">${estado}</span></td>
+      fila.innerHTML = `
+        <td><strong class="node-letter">${nodo}</strong></td>
+        <td><span class="dist-val">${distTexto}</span></td>
+        <td><span class="pred-val">${predTexto}</span></td>
+        <td><span class="badge ${claseBadge}">${estado}</span></td>
       `;
 
-      tbody.appendChild(tr);
+      cuerpoTabla.appendChild(fila);
     }
   }
 
   /**
    * Actualiza el panel de resultado final (distancia y camino mínimo).
-   * @param {object} step
+   * @param {object} paso
    */
-  updateResultsSummary(step) {
-    const resultsContainer = document.getElementById('dijkstra-final-results');
-    if (!resultsContainer) return;
+  actualizarResumenResultados(paso) {
+    const contenedorResultados = document.getElementById('dijkstra-final-results');
+    if (!contenedorResultados) return;
 
-    if (!step.isFinal || !step.finalData) {
-      resultsContainer.style.display = 'none';
+    const esFinal = paso.esFinal || paso.isFinal;
+    const datosFinales = paso.datosFinales || paso.finalData;
+
+    if (!esFinal || !datosFinales) {
+      contenedorResultados.style.display = 'none';
       return;
     }
 
-    resultsContainer.style.display = 'block';
-    const { reachable, distance, path, origin, destination } = step.finalData;
+    contenedorResultados.style.display = 'block';
+    const alcanzable = datosFinales.alcanzable !== undefined ? datosFinales.alcanzable : datosFinales.reachable;
+    const distancia = datosFinales.distancia !== undefined ? datosFinales.distancia : datosFinales.distance;
+    const camino = datosFinales.camino || datosFinales.path || [];
+    const origen = datosFinales.origen || datosFinales.origin;
+    const destino = datosFinales.destino || datosFinales.destination;
 
-    if (!reachable) {
-      resultsContainer.innerHTML = `
+    if (!alcanzable) {
+      contenedorResultados.innerHTML = `
         <div class="alert alert-warning">
           <span>⚠️ <strong>Destino inalcanzable:</strong> no existe una ruta dirigida de
-          <strong>${origin}</strong> a <strong>${destination}</strong> (distancia = ∞).</span>
+          <strong>${origen}</strong> a <strong>${destino}</strong> (distancia = ∞).</span>
         </div>
       `;
       return;
     }
 
-    resultsContainer.innerHTML = `
+    contenedorResultados.innerHTML = `
       <div class="card result-card">
         <div class="result-header">
           <h4>Resultado del algoritmo</h4>
@@ -579,11 +607,11 @@ export class UIManager {
         <div class="result-metrics-grid">
           <div class="metric-box">
             <span class="metric-label">Distancia mínima</span>
-            <span class="metric-number">${distance}</span>
+            <span class="metric-number">${distancia}</span>
           </div>
           <div class="metric-box">
             <span class="metric-label">Camino mínimo</span>
-            <span class="metric-number path-sequence">${path.join(' → ')}</span>
+            <span class="metric-number path-sequence">${camino.join(' → ')}</span>
           </div>
         </div>
         <div class="result-footer-note">
@@ -594,25 +622,28 @@ export class UIManager {
   }
 
   /** Restablece el panel de ejecución al estado "no iniciado". */
-  resetStepView() {
-    const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+  reiniciarVistaPasos() {
+    const aplicarSiExiste = (id, accion) => {
+      const elemento = document.getElementById(id);
+      if (elemento) accion(elemento);
+    };
 
-    set('dijkstra-final-results', el => { el.style.display = 'none'; });
-    set('step-counter-badge', el => { el.textContent = 'Paso 0 de 0'; });
-    set('step-progress-bar', el => { el.style.width = '0%'; });
-    set('step-iteration-title', el => { el.textContent = 'Algoritmo no iniciado'; });
-    set('step-current-node-badge', el => { el.style.display = 'none'; });
-    set('step-explanation-text', el => {
+    aplicarSiExiste('dijkstra-final-results', el => { el.style.display = 'none'; });
+    aplicarSiExiste('step-counter-badge', el => { el.textContent = 'Paso 0 de 0'; });
+    aplicarSiExiste('step-progress-bar', el => { el.style.width = '0%'; });
+    aplicarSiExiste('step-iteration-title', el => { el.textContent = 'Algoritmo no iniciado'; });
+    aplicarSiExiste('step-current-node-badge', el => { el.style.display = 'none'; });
+    aplicarSiExiste('step-explanation-text', el => {
       el.textContent = 'Seleccione el origen y destino y presione "Iniciar Dijkstra" para comenzar la simulación paso a paso.';
     });
-    set('step-math-operation', el => { el.textContent = ''; });
-    set('dijkstra-labels-body', el => {
+    aplicarSiExiste('step-math-operation', el => { el.textContent = ''; });
+    aplicarSiExiste('dijkstra-labels-body', el => {
       el.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Inicie el algoritmo para observar el etiquetado de vértices.</td></tr>';
     });
   }
 
   /** Quita los resaltados de ejecución del grafo. */
-  clearStepVisualization() {
+  limpiarVisualizacionPasos() {
     if (!this.cy) return;
     this.cy.nodes().removeClass('origin destination current target-evaluating visited');
     this.cy.edges().removeClass('evaluating improved shortest-path');
@@ -620,29 +651,42 @@ export class UIManager {
 
   /**
    * Muestra un mensaje flotante (toast) o banner no bloqueante en la interfaz.
-   * @param {string} message - Texto del mensaje
-   * @param {'success' | 'warning' | 'error' | 'info'} type - Tipo semántico
+   * @param {string} mensaje - Texto del mensaje
+   * @param {'success' | 'warning' | 'error' | 'info'} tipo - Tipo semántico
    */
-  showMessage(message, type = 'info') {
-    const alertBox = document.getElementById('global-alert-box');
-    if (!alertBox) return;
+  mostrarMensaje(mensaje, tipo = 'info') {
+    const cajaAlerta = document.getElementById('global-alert-box');
+    if (!cajaAlerta) return;
 
-    if (this.toastTimeout) {
-      clearTimeout(this.toastTimeout);
+    if (this.temporizadorMensaje) {
+      clearTimeout(this.temporizadorMensaje);
     }
 
-    alertBox.className = `alert alert-${type} show`;
-    alertBox.innerHTML = `
-      <span>${message}</span>
+    cajaAlerta.className = `alert alert-${tipo} show`;
+    cajaAlerta.innerHTML = `
+      <span>${mensaje}</span>
       <button type="button" class="alert-close-btn" onclick="this.parentElement.className='alert alert-hidden'">✕</button>
     `;
 
     // Autoocultar luego de 6 segundos si es éxito o info
-    if (type === 'success' || type === 'info') {
-      this.toastTimeout = setTimeout(() => {
-        alertBox.className = 'alert alert-hidden';
+    if (tipo === 'success' || tipo === 'info') {
+      this.temporizadorMensaje = setTimeout(() => {
+        cajaAlerta.className = 'alert alert-hidden';
       }, 6000);
     }
   }
 
+  // --- Métodos de compatibilidad hacia atrás ---
+  initCytoscape(id) { this.inicializarCytoscape(id); }
+  renderGraph(elem) { this.renderizarGrafo(elem); }
+  fitGraph() { this.ajustarVistaGrafo(); }
+  applyStepVisualization(paso, orig, dest) { this.aplicarVisualizacionPaso(paso, orig, dest); }
+  updateNodeSelectors(nodos) { this.actualizarSelectoresNodos(nodos); }
+  updateEdgeTable(aristas, cb) { this.actualizarTablaAristas(aristas, cb); }
+  updateAdjacencyList(adj) { this.actualizarListaAdyacencia(adj); }
+  updateAdjacencyMatrix(mat) { this.actualizarMatrizAdyacencia(mat); }
+  updateDijkstraStepView(paso, prog, orig) { this.actualizarVistaPasoDijkstra(paso, prog, orig); }
+  resetStepView() { this.reiniciarVistaPasos(); }
+  clearStepVisualization() { this.limpiarVisualizacionPasos(); }
+  showMessage(msg, tipo) { this.mostrarMensaje(msg, tipo); }
 }
