@@ -1,5 +1,5 @@
 /**
- * app.js
+ * aplicacion.js
  * Controlador principal y punto de entrada de la aplicación.
  * Coordina el grafo, las validaciones, el algoritmo de Dijkstra,
  * el gestor de pasos y la interfaz de usuario.
@@ -7,213 +7,213 @@
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
  */
 
-import { Graph } from './graph.js';
-import { validateNodeCount, validateNewEdge, validateDijkstraStart } from './validation.js';
-import { runDijkstra } from './dijkstra.js';
-import { StepManager } from './step-manager.js';
-import { UIManager } from './ui.js';
+import { Grafo } from './grafo.js';
+import { validarCantidadNodos, validarNuevaArista, validarInicioDijkstra } from './validacion.js';
+import { ejecutarDijkstra } from './dijkstra.js';
+import { GestorPasos } from './gestor-pasos.js';
+import { GestorInterfaz } from './interfaz.js';
 
-class App {
+export class Aplicacion {
   constructor() {
-    this.graph = new Graph();
-    this.ui = new UIManager();
-    this.stepManager = new StepManager();
+    this.grafo = new Grafo();
+    this.interfaz = new GestorInterfaz();
+    this.gestorPasos = new GestorPasos();
 
-    this.currentOrigin = null;
-    this.currentDestination = null;
-    this.isDijkstraActive = false;
+    this.origenActual = null;
+    this.destinoActual = null;
+    this.dijkstraActivo = false;
   }
 
   /** Inicializa la aplicación y carga el ejemplo inicial. */
-  init() {
-    this.ui.initCytoscape('cy-container');
-    this.setupEventListeners();
-    this.handleLoadDemoExample(false);
+  inicializar() {
+    this.interfaz.inicializarCytoscape('cy-container');
+    this.configurarEventos();
+    this.manejarCargarEjemploDemostracion(false);
   }
 
   /** Asocia un manejador al clic de un botón (si existe). */
-  on(id, handler) {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('click', handler);
+  asociarEvento(id, manejador) {
+    const elemento = document.getElementById(id);
+    if (elemento) elemento.addEventListener('click', manejador);
   }
 
-  setupEventListeners() {
-    this.on('btn-create-nodes', () => this.handleCreateNodes());
-    this.on('btn-reset-project', () => this.handleResetProject());
-    this.on('btn-add-edge', () => this.handleAddEdge());
-    this.on('btn-clear-edges', () => this.handleClearEdges());
-    this.on('btn-load-example', () => this.handleLoadDemoExample());
-    this.on('btn-fit-graph', () => this.ui.fitGraph());
-    this.on('btn-start-dijkstra', () => this.handleStartDijkstra());
-    this.on('btn-next-step', () => this.handleNextStep());
-    this.on('btn-reset-dijkstra', () => this.handleResetDijkstra());
+  configurarEventos() {
+    this.asociarEvento('btn-create-nodes', () => this.manejarCrearNodos());
+    this.asociarEvento('btn-reset-project', () => this.manejarReiniciarProyecto());
+    this.asociarEvento('btn-add-edge', () => this.manejarAgregarArista());
+    this.asociarEvento('btn-clear-edges', () => this.manejarLimpiarAristas());
+    this.asociarEvento('btn-load-example', () => this.manejarCargarEjemploDemostracion());
+    this.asociarEvento('btn-fit-graph', () => this.interfaz.ajustarVistaGrafo());
+    this.asociarEvento('btn-start-dijkstra', () => this.manejarIniciarDijkstra());
+    this.asociarEvento('btn-next-step', () => this.manejarSiguientePaso());
+    this.asociarEvento('btn-reset-dijkstra', () => this.manejarReiniciarDijkstra());
   }
 
   /** Crea los nodos A, B, C... según la cantidad ingresada (7 a 16). */
-  handleCreateNodes() {
+  manejarCrearNodos() {
     const input = document.getElementById('node-count-input');
     if (!input) return;
 
-    const validation = validateNodeCount(input.value);
-    if (!validation.isValid) {
-      this.ui.showMessage(validation.error, 'error');
+    const validacion = validarCantidadNodos(input.value);
+    if (!validacion.esValido) {
+      this.interfaz.mostrarMensaje(validacion.error, 'error');
       return;
     }
 
-    this.graph.setNodes(validation.value);
-    this.resetDijkstraExecutionState();
-    this.refreshAllGraphViews();
-    this.ui.showMessage(`Se generaron ${validation.value} nodos: [${this.graph.getNodes().join(', ')}].`, 'success');
+    this.grafo.establecerNodos(validacion.valor);
+    this.reiniciarEstadoEjecucionDijkstra();
+    this.refrescarTodasLasVistasGrafo();
+    this.interfaz.mostrarMensaje(`Se generaron ${validacion.valor} nodos: [${this.grafo.obtenerNodos().join(', ')}].`, 'success');
   }
 
   /** Reinicia el proyecto completo (nodos, aristas y ejecución). */
-  handleResetProject() {
-    this.graph.reset();
-    this.resetDijkstraExecutionState();
+  manejarReiniciarProyecto() {
+    this.grafo.reiniciar();
+    this.reiniciarEstadoEjecucionDijkstra();
 
     const input = document.getElementById('node-count-input');
     if (input) input.value = '';
 
-    this.refreshAllGraphViews();
-    this.ui.showMessage('Proyecto reiniciado. Ingrese una cantidad de nodos para comenzar.', 'info');
+    this.refrescarTodasLasVistasGrafo();
+    this.interfaz.mostrarMensaje('Proyecto reiniciado. Ingrese una cantidad de nodos para comenzar.', 'info');
   }
 
   /** Agrega una arista dirigida validando duplicados, peso y ciclos. */
-  handleAddEdge() {
-    const from = document.getElementById('edge-from').value;
-    const to = document.getElementById('edge-to').value;
-    const weightInput = document.getElementById('edge-weight');
+  manejarAgregarArista() {
+    const origen = document.getElementById('edge-from').value;
+    const destino = document.getElementById('edge-to').value;
+    const inputPeso = document.getElementById('edge-weight');
 
-    const validation = validateNewEdge(this.graph, from, to, weightInput.value);
-    if (!validation.isValid) {
-      this.ui.showMessage(validation.error, 'error');
+    const validacion = validarNuevaArista(this.grafo, origen, destino, inputPeso.value);
+    if (!validacion.esValido) {
+      this.interfaz.mostrarMensaje(validacion.error, 'error');
       return;
     }
 
-    this.graph.addEdge(from, to, validation.weight);
-    this.resetDijkstraExecutionState();
-    weightInput.value = '';
+    this.grafo.agregarArista(origen, destino, validacion.peso);
+    this.reiniciarEstadoEjecucionDijkstra();
+    inputPeso.value = '';
 
-    this.refreshAllGraphViews();
-    this.ui.showMessage(`Arista ${from} → ${to} (peso ${validation.weight}) agregada.`, 'success');
+    this.refrescarTodasLasVistasGrafo();
+    this.interfaz.mostrarMensaje(`Arista ${origen} → ${destino} (peso ${validacion.peso}) agregada.`, 'success');
   }
 
-  handleDeleteEdge(from, to) {
-    if (this.graph.removeEdge(from, to)) {
-      this.resetDijkstraExecutionState();
-      this.refreshAllGraphViews();
-      this.ui.showMessage(`Arista ${from} → ${to} eliminada.`, 'info');
+  manejarEliminarArista(origen, destino) {
+    if (this.grafo.eliminarArista(origen, destino)) {
+      this.reiniciarEstadoEjecucionDijkstra();
+      this.refrescarTodasLasVistasGrafo();
+      this.interfaz.mostrarMensaje(`Arista ${origen} → ${destino} eliminada.`, 'info');
     }
   }
 
-  handleClearEdges() {
-    if (this.graph.getEdges().length === 0) {
-      this.ui.showMessage('No hay aristas para limpiar.', 'warning');
+  manejarLimpiarAristas() {
+    if (this.grafo.obtenerAristas().length === 0) {
+      this.interfaz.mostrarMensaje('No hay aristas para limpiar.', 'warning');
       return;
     }
 
-    this.graph.clearEdges();
-    this.resetDijkstraExecutionState();
-    this.refreshAllGraphViews();
-    this.ui.showMessage('Todas las aristas fueron eliminadas.', 'info');
+    this.grafo.limpiarAristas();
+    this.reiniciarEstadoEjecucionDijkstra();
+    this.refrescarTodasLasVistasGrafo();
+    this.interfaz.mostrarMensaje('Todas las aristas fueron eliminadas.', 'info');
   }
 
   /** Carga el grafo de ejemplo (A–H) con origen A y destino H. */
-  handleLoadDemoExample(showToast = true) {
-    this.graph.loadDemonstrationExample();
-    this.resetDijkstraExecutionState();
+  manejarCargarEjemploDemostracion(mostrarAviso = true) {
+    this.grafo.cargarEjemploDemostracion();
+    this.reiniciarEstadoEjecucionDijkstra();
 
-    const nodeInput = document.getElementById('node-count-input');
-    if (nodeInput) nodeInput.value = 8;
+    const inputNodos = document.getElementById('node-count-input');
+    if (inputNodos) inputNodos.value = 8;
 
-    this.refreshAllGraphViews();
+    this.refrescarTodasLasVistasGrafo();
 
-    const origSelect = document.getElementById('dijkstra-origin');
-    const destSelect = document.getElementById('dijkstra-destination');
-    if (origSelect) origSelect.value = 'A';
-    if (destSelect) destSelect.value = 'H';
+    const selectOrigen = document.getElementById('dijkstra-origin');
+    const selectDestino = document.getElementById('dijkstra-destination');
+    if (selectOrigen) selectOrigen.value = 'A';
+    if (selectDestino) selectDestino.value = 'H';
 
-    if (showToast) {
-      this.ui.showMessage('Ejemplo cargado: 8 nodos (A–H). Camino mínimo de A a H con costo 15.', 'success');
+    if (mostrarAviso) {
+      this.interfaz.mostrarMensaje('Ejemplo cargado: 8 nodos (A–H). Camino mínimo de A a H con costo 15.', 'success');
     }
   }
 
   /** Valida origen/destino, ejecuta Dijkstra y muestra el paso 0. */
-  handleStartDijkstra() {
-    const origin = document.getElementById('dijkstra-origin').value;
-    const destination = document.getElementById('dijkstra-destination').value;
+  manejarIniciarDijkstra() {
+    const origen = document.getElementById('dijkstra-origin').value;
+    const destino = document.getElementById('dijkstra-destination').value;
 
-    const validation = validateDijkstraStart(this.graph, origin, destination);
-    if (!validation.isValid) {
-      this.ui.showMessage(validation.error, 'error');
+    const validacion = validarInicioDijkstra(this.grafo, origen, destino);
+    if (!validacion.esValido) {
+      this.interfaz.mostrarMensaje(validacion.error, 'error');
       return;
     }
 
-    this.currentOrigin = origin;
-    this.currentDestination = destination;
+    this.origenActual = origen;
+    this.destinoActual = destino;
 
-    this.stepManager.setSteps(runDijkstra(this.graph, origin, destination));
-    this.isDijkstraActive = true;
-    this.renderCurrentStep();
+    this.gestorPasos.establecerPasos(ejecutarDijkstra(this.grafo, origen, destino));
+    this.dijkstraActivo = true;
+    this.renderizarPasoActual();
 
-    this.ui.showMessage(`Simulación iniciada: camino mínimo de ${origin} a ${destination}.`, 'success');
+    this.interfaz.mostrarMensaje(`Simulación iniciada: camino mínimo de ${origen} a ${destino}.`, 'success');
 
-    const execSection = document.getElementById('section-step-execution');
-    if (execSection) execSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    const seccionEjecucion = document.getElementById('section-step-execution');
+    if (seccionEjecucion) seccionEjecucion.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  handleNextStep() {
-    if (!this.isDijkstraActive || !this.stepManager.hasNext()) return;
-    this.stepManager.nextStep();
-    this.renderCurrentStep();
+  manejarSiguientePaso() {
+    if (!this.dijkstraActivo || !this.gestorPasos.tieneSiguiente()) return;
+    this.gestorPasos.siguientePaso();
+    this.renderizarPasoActual();
   }
 
-  handleResetDijkstra() {
-    if (!this.isDijkstraActive) return;
-    this.stepManager.goToStart();
-    this.renderCurrentStep();
+  manejarReiniciarDijkstra() {
+    if (!this.dijkstraActivo) return;
+    this.gestorPasos.irAlInicio();
+    this.renderizarPasoActual();
   }
 
   /** Dibuja el paso actual en el grafo, las tablas y los paneles. */
-  renderCurrentStep() {
-    const step = this.stepManager.getCurrentStep();
-    if (!step) return;
+  renderizarPasoActual() {
+    const paso = this.gestorPasos.obtenerPasoActual();
+    if (!paso) return;
 
-    this.ui.applyStepVisualization(step, this.currentOrigin, this.currentDestination);
-    this.ui.updateDijkstraStepView(step, this.stepManager.getProgress(), this.currentOrigin);
-    this.updateNavigationButtonsState();
+    this.interfaz.aplicarVisualizacionPaso(paso, this.origenActual, this.destinoActual);
+    this.interfaz.actualizarVistaPasoDijkstra(paso, this.gestorPasos.obtenerProgreso(), this.origenActual);
+    this.actualizarEstadoBotonesNavegacion();
   }
 
-  updateNavigationButtonsState() {
-    const btnNext = document.getElementById('btn-next-step');
-    const btnReset = document.getElementById('btn-reset-dijkstra');
+  actualizarEstadoBotonesNavegacion() {
+    const btnSiguiente = document.getElementById('btn-next-step');
+    const btnReiniciar = document.getElementById('btn-reset-dijkstra');
 
-    const active = this.isDijkstraActive;
-    if (btnNext) btnNext.disabled = !active || !this.stepManager.hasNext();
-    if (btnReset) btnReset.disabled = !active || this.stepManager.isAtStart();
+    const activo = this.dijkstraActivo;
+    if (btnSiguiente) btnSiguiente.disabled = !activo || !this.gestorPasos.tieneSiguiente();
+    if (btnReiniciar) btnReiniciar.disabled = !activo || this.gestorPasos.estaAlInicio();
   }
 
   /** Limpia la ejecución cuando cambia la estructura del grafo. */
-  resetDijkstraExecutionState() {
-    this.isDijkstraActive = false;
-    this.stepManager.reset();
-    this.updateNavigationButtonsState();
-    this.ui.resetStepView();
-    if (this.ui.cy) this.ui.clearStepVisualization();
+  reiniciarEstadoEjecucionDijkstra() {
+    this.dijkstraActivo = false;
+    this.gestorPasos.reiniciar();
+    this.actualizarEstadoBotonesNavegacion();
+    this.interfaz.reiniciarVistaPasos();
+    if (this.interfaz.cy) this.interfaz.limpiarVisualizacionPasos();
   }
 
   /** Refresca el grafo, selectores, tabla de aristas, lista y matriz de adyacencia. */
-  refreshAllGraphViews() {
-    this.ui.renderGraph(this.graph.toCytoscapeElements());
-    this.ui.updateNodeSelectors(this.graph.getNodes());
-    this.ui.updateEdgeTable(this.graph.getEdges(), (from, to) => this.handleDeleteEdge(from, to));
-    this.ui.updateAdjacencyList(this.graph.getAdjacencyList());
-    this.ui.updateAdjacencyMatrix(this.graph.getAdjacencyMatrix());
+  refrescarTodasLasVistasGrafo() {
+    this.interfaz.renderizarGrafo(this.grafo.aElementosCytoscape());
+    this.interfaz.actualizarSelectoresNodos(this.grafo.obtenerNodos());
+    this.interfaz.actualizarTablaAristas(this.grafo.obtenerAristas(), (origen, destino) => this.manejarEliminarArista(origen, destino));
+    this.interfaz.actualizarListaAdyacencia(this.grafo.obtenerListaAdyacencia());
+    this.interfaz.actualizarMatrizAdyacencia(this.grafo.obtenerMatrizAdyacencia());
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const app = new App();
-  app.init();
-  window.__appInstance = app;
+  const app = new Aplicacion();
+  app.inicializar();
+  window.__instanciaApp = app;
 });
