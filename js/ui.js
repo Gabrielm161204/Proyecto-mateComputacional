@@ -54,9 +54,7 @@ export class UIManager {
             'border-width': 3,
             'border-color': '#64748b',
             'width': 44,
-            'height': 44,
-            'transition-property': 'background-color, border-color, border-width, width, height, line-color, shadow-blur',
-            'transition-duration': '0.25s'
+            'height': 44
           }
         },
 
@@ -91,10 +89,7 @@ export class UIManager {
             'border-width': 5,
             'color': '#78350f',
             'width': 50,
-            'height': 50,
-            'shadow-blur': 12,
-            'shadow-color': 'rgba(217, 119, 6, 0.45)',
-            'shadow-opacity': 0.8
+            'height': 50
           }
         },
 
@@ -120,16 +115,6 @@ export class UIManager {
           }
         },
 
-        // --- Nodo Inalcanzable ---
-        {
-          selector: 'node.unreachable',
-          style: {
-            'background-color': '#f1f5f9',
-            'border-color': '#94a3b8',
-            'border-style': 'dashed',
-            'color': '#64748b'
-          }
-        },
 
         // --- Estilo Base de Aristas ---
         {
@@ -153,9 +138,7 @@ export class UIManager {
             'text-border-color': '#cbd5e1',
             'text-border-width': 1,
             'text-border-opacity': 0.9,
-            'text-margin-y': -8,
-            'transition-property': 'line-color, target-arrow-color, width',
-            'transition-duration': '0.2s'
+            'text-margin-y': -8
           }
         },
 
@@ -181,16 +164,6 @@ export class UIManager {
           }
         },
 
-        // --- Arista con Empate de Distancia (Múltiple Camino) ---
-        {
-          selector: 'edge.tied',
-          style: {
-            'line-color': '#3b82f6',
-            'target-arrow-color': '#3b82f6',
-            'width': 4.5,
-            'line-style': 'solid'
-          }
-        },
 
         // --- Arista que Pertenece a una Ruta Mínima Final ---
         {
@@ -242,8 +215,8 @@ export class UIManager {
 
     this.cy.batch(() => {
       // 1. Limpiar clases dinámicas previas
-      this.cy.nodes().removeClass('origin destination current target-evaluating visited unreachable');
-      this.cy.edges().removeClass('evaluating improved tied shortest-path');
+      this.cy.nodes().removeClass('origin destination current target-evaluating visited');
+      this.cy.edges().removeClass('evaluating improved shortest-path');
 
       // 2. Resaltar origen y destino estructurales
       if (origin) {
@@ -288,15 +261,13 @@ export class UIManager {
         if (edgeElem.length > 0) {
           if (step.highlight.improvedEdge) {
             edgeElem.addClass('improved');
-          } else if (step.highlight.tiedEdge) {
-            edgeElem.addClass('tied');
           } else {
             edgeElem.addClass('evaluating');
           }
         }
       }
 
-      // 7. Resaltar caminos mínimos finales si es el paso final
+      // 7. Resaltar el camino mínimo final si es el paso final
       if (step.isFinal && step.highlight && Array.isArray(step.highlight.pathEdges)) {
         for (const edgeId of step.highlight.pathEdges) {
           const pathEdge = this.cy.getElementById(edgeId);
@@ -473,7 +444,7 @@ export class UIManager {
    * @param {string} origin - Vértice origen
    * @param {string} destination - Vértice destino
    */
-  updateDijkstraStepView(step, progress, origin, destination) {
+  updateDijkstraStepView(step, progress, origin) {
     if (!step) return;
 
     // 1. Contador de pasos y barra de progreso
@@ -512,19 +483,18 @@ export class UIManager {
     }
 
     // 4. Tabla de etiquetas de Dijkstra
-    this.updateDijkstraLabelsTable(step, origin, destination);
+    this.updateDijkstraLabelsTable(step, origin);
 
     // 5. Panel de resultados finales
     this.updateResultsSummary(step);
   }
 
   /**
-   * Actualiza la tabla de etiquetas (Vértice, Distancia acumulada, Predecesores, Estado).
+   * Actualiza la tabla de etiquetas (Vértice, Distancia acumulada, Predecesor, Estado).
    * @param {object} step 
    * @param {string} origin 
-   * @param {string} destination 
    */
-  updateDijkstraLabelsTable(step, origin, destination) {
+  updateDijkstraLabelsTable(step, origin) {
     const tbody = document.getElementById('dijkstra-labels-body');
     if (!tbody) return;
 
@@ -534,8 +504,7 @@ export class UIManager {
     for (const node of nodes) {
       const dist = step.distances[node];
       const distStr = dist === Infinity ? '∞' : String(dist);
-      const preds = step.predecessors[node] || [];
-      const predsStr = preds.length > 0 ? preds.join(', ') : '—';
+      const predsStr = step.predecessors[node] || '—';
 
       // Determinar estado semántico del nodo
       let estado = '';
@@ -577,8 +546,8 @@ export class UIManager {
   }
 
   /**
-   * Actualiza el panel de resultados finales de caminos mínimos.
-   * @param {object} step 
+   * Actualiza el panel de resultado final (distancia y camino mínimo).
+   * @param {object} step
    */
   updateResultsSummary(step) {
     const resultsContainer = document.getElementById('dijkstra-final-results');
@@ -590,61 +559,63 @@ export class UIManager {
     }
 
     resultsContainer.style.display = 'block';
-    const { reachable, distance, paths, pathCount, origin, destination } = step.finalData;
+    const { reachable, distance, path, origin, destination } = step.finalData;
 
     if (!reachable) {
       resultsContainer.innerHTML = `
-        <div class="alert alert-warning mb-0">
-          <h5 class="alert-heading">⚠️ Destino Inalcanzable</h5>
-          <p class="mb-0">
-            No existe una ruta dirigida desde el vértice origen <strong>${origin}</strong>
-            hasta el vértice destino <strong>${destination}</strong>.
-            La distancia calculada es <strong>∞</strong>.
-          </p>
+        <div class="alert alert-warning">
+          <span>⚠️ <strong>Destino inalcanzable:</strong> no existe una ruta dirigida de
+          <strong>${origin}</strong> a <strong>${destination}</strong> (distancia = ∞).</span>
         </div>
       `;
       return;
     }
 
-    let pathsHtml = '<ol class="paths-list mb-0">';
-    for (const p of paths) {
-      pathsHtml += `<li><strong class="path-sequence">${p.join(' → ')}</strong> <span class="badge badge-cost">Costo: ${distance}</span></li>`;
-    }
-    pathsHtml += '</ol>';
-
-    const multipleBadge = pathCount > 1
-      ? `<div class="badge badge-multi-solution mb-2">✨ ¡Existen ${pathCount} caminos mínimos óptimos de igual distancia!</div>`
-      : `<div class="badge badge-unique-solution mb-2">✓ Camino mínimo único encontrado</div>`;
-
     resultsContainer.innerHTML = `
       <div class="card result-card">
         <div class="result-header">
-          <h4 class="mb-1">🎉 Resultado Óptimo del Algoritmo</h4>
-          ${multipleBadge}
+          <h4>Resultado del algoritmo</h4>
         </div>
         <div class="result-metrics-grid">
           <div class="metric-box">
-            <span class="metric-label">Distancia Mínima</span>
+            <span class="metric-label">Distancia mínima</span>
             <span class="metric-number">${distance}</span>
           </div>
           <div class="metric-box">
-            <span class="metric-label">Caminos Mínimos</span>
-            <span class="metric-number">${pathCount}</span>
+            <span class="metric-label">Camino mínimo</span>
+            <span class="metric-number path-sequence">${path.join(' → ')}</span>
           </div>
-          <div class="metric-box">
-            <span class="metric-label">Recorrido</span>
-            <span class="metric-number">${origin} → ${destination}</span>
-          </div>
-        </div>
-        <div class="result-paths-detail">
-          <h6 class="text-uppercase text-muted font-weight-bold mb-2">Secuencia(s) de Vértices:</h6>
-          ${pathsHtml}
         </div>
         <div class="result-footer-note">
-          <small class="text-muted">Las aristas que componen todas las rutas óptimas han sido resaltadas en rojo carmesí sobre el grafo visual.</small>
+          <small class="text-muted">Las aristas del camino mínimo se resaltan en rojo sobre el grafo.</small>
         </div>
       </div>
     `;
+  }
+
+  /** Restablece el panel de ejecución al estado "no iniciado". */
+  resetStepView() {
+    const set = (id, fn) => { const el = document.getElementById(id); if (el) fn(el); };
+
+    set('dijkstra-final-results', el => { el.style.display = 'none'; });
+    set('step-counter-badge', el => { el.textContent = 'Paso 0 de 0'; });
+    set('step-progress-bar', el => { el.style.width = '0%'; });
+    set('step-iteration-title', el => { el.textContent = 'Algoritmo no iniciado'; });
+    set('step-current-node-badge', el => { el.style.display = 'none'; });
+    set('step-explanation-text', el => {
+      el.textContent = 'Seleccione el origen y destino y presione "Iniciar Dijkstra" para comenzar la simulación paso a paso.';
+    });
+    set('step-math-operation', el => { el.textContent = ''; });
+    set('dijkstra-labels-body', el => {
+      el.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Inicie el algoritmo para observar el etiquetado de vértices.</td></tr>';
+    });
+  }
+
+  /** Quita los resaltados de ejecución del grafo. */
+  clearStepVisualization() {
+    if (!this.cy) return;
+    this.cy.nodes().removeClass('origin destination current target-evaluating visited');
+    this.cy.edges().removeClass('evaluating improved shortest-path');
   }
 
   /**
@@ -674,13 +645,4 @@ export class UIManager {
     }
   }
 
-  /**
-   * Oculta el mensaje global de alerta.
-   */
-  hideMessage() {
-    const alertBox = document.getElementById('global-alert-box');
-    if (alertBox) {
-      alertBox.className = 'alert alert-hidden';
-    }
-  }
 }

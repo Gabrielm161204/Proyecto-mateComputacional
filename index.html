@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Problema del camino mínimo usando el algoritmo de Dijkstra | Matemática Computacional</title>
-  <meta name="description" content="Simulador interactivo del problema del camino mínimo usando el algoritmo de Dijkstra en grafos dirigidos acíclicos ponderados (DAGs). Proyecto académico de Matemática Computacional.">
+  <meta name="description" content="Simulador interactivo del algoritmo de Dijkstra en grafos dirigidos acíclicos ponderados (DAGs). Proyecto académico de Matemática Computacional.">
   
-  <!-- Tipografía Editorial: Newsreader (Serif), Inter (Sans) y JetBrains Mono (Mono) -->
+  <!-- Tipografía: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <!-- Hoja de estilos principal -->
   <link rel="stylesheet" href="./styles/main.css">
@@ -29,17 +29,9 @@
         Problema del camino mínimo <span class="title-accent">Dijkstra</span>
       </h1>
       <p class="header-description">
-        Modelado interactivo en Grafos Dirigidos Acíclicos Ponderados (DAGs). Determinación paso a paso de distancias tentativas, relajación de aristas cuando <span class="pill-formula">dist(u) + w &lt; dist(v)</span> y detección exhaustiva de múltiples caminos mínimos alternativos cuando <span class="pill-formula">dist(u) + w == dist(v)</span>.
+        Modelado interactivo en Grafos Dirigidos Acíclicos Ponderados (DAGs). Determinación paso a paso de distancias tentativas y relajación de aristas cuando <span class="pill-formula">dist(u) + w &lt; dist(v)</span>.
       </p>
 
-      <!-- Píldoras de Navegación del Flujo Académico (Inspirado en la referencia) -->
-      <nav class="pipeline-pills" aria-label="Etapas del problema">
-        <span class="pipeline-pill active"><span class="pill-dot"></span> 1. Nodos</span>
-        <span class="pipeline-pill active"><span class="pill-dot"></span> 2. Construcción DAG</span>
-        <span class="pipeline-pill active"><span class="pill-dot"></span> 3. Origen y Destino</span>
-        <span class="pipeline-pill active"><span class="pill-dot"></span> 4. Dijkstra Paso a Paso</span>
-        <span class="pipeline-pill active"><span class="pill-dot"></span> 5. Múltiples Rutas</span>
-      </nav>
     </div>
   </header>
 
@@ -92,17 +84,10 @@
         <!-- 2. Construcción del Grafo -->
         <section class="card" id="section-build-graph">
           <div class="card-header">
-            <h2><span class="header-step-num">2</span> Construcción del grafo</h2>
+            <h2><span class="header-step-num">2</span> Construcción manual del grafo</h2>
           </div>
           
-          <!-- Pestañas de modo -->
-          <div class="tab-navigation">
-            <button type="button" class="tab-btn active" id="tab-btn-manual">Modo Manual</button>
-            <button type="button" class="tab-btn" id="tab-btn-random">Modo Aleatorio</button>
-          </div>
-
-          <!-- Pestaña: Modo Manual -->
-          <div class="tab-pane" id="pane-manual">
+          <div class="card-body" id="pane-manual">
             <div class="form-group">
               <div class="input-row">
                 <div style="flex: 1;">
@@ -158,32 +143,13 @@
             </div>
           </div>
 
-          <!-- Pestaña: Modo Aleatorio -->
-          <div class="tab-pane d-none" id="pane-random">
-            <div class="form-group">
-              <label for="random-density" class="form-label">Densidad de aristas:</label>
-              <select id="random-density" class="form-select">
-                <option value="baja">Baja (~1.3n aristas)</option>
-                <option value="media" selected>Media (~2.0n aristas)</option>
-                <option value="alta">Alta (~2.8n aristas)</option>
-              </select>
-              <small class="form-text">Genera un DAG conexo con pesos aleatorios enteros de 1 a 20 garantizando que no existan ciclos.</small>
-            </div>
-
-            <div class="form-group">
-              <button type="button" id="btn-generate-random" class="btn btn-primary btn-block">
-                🎲 Generar grafo aleatorio
-              </button>
-            </div>
-          </div>
-
-          <!-- Botón de Demostración Especial -->
+          <!-- Botón de ejemplo -->
           <div style="padding: 0 1.4rem 1.4rem;">
             <button type="button" id="btn-load-example" class="btn btn-secondary btn-block" style="border: 1px dashed var(--teal-primary); color: var(--teal-primary); font-weight: 600;">
-              ⭐ Cargar ejemplo (Múltiples caminos mínimos)
+              ⭐ Cargar ejemplo
             </button>
             <small class="form-text text-center" style="display: block; text-align: center; margin-top: 0.35rem;">
-              Caso de 8 nodos con 4 rutas óptimas simultáneas de coste 15.
+              Grafo de 8 nodos (A–H). Camino mínimo A → H de costo 15.
             </small>
           </div>
         </section>
@@ -209,7 +175,7 @@
 
             <div class="form-group" style="margin-top: 1.25rem;">
               <button type="button" id="btn-start-dijkstra" class="btn btn-primary btn-block" style="font-size: 0.95rem; padding: 0.75rem;">
-                🚀 Preparar e Iniciar Dijkstra
+                🚀 Iniciar Dijkstra
               </button>
             </div>
           </div>
@@ -267,7 +233,7 @@
                 </div>
                 <div class="legend-item">
                   <span class="legend-line line-path"></span>
-                  <span>Camino(s) mínimo(s)</span>
+                  <span>Camino mínimo</span>
                 </div>
               </div>
             </div>
@@ -290,16 +256,10 @@
 
             <!-- Botones de Navegación Interactiva -->
             <div class="execution-controls">
-              <button type="button" id="btn-prev-step" class="btn btn-secondary" disabled title="Paso anterior (Atajo: Flecha Izquierda)">
-                ◀ Paso anterior
-              </button>
-              <button type="button" id="btn-next-step" class="btn btn-primary" disabled title="Siguiente paso (Atajo: Flecha Derecha)">
+              <button type="button" id="btn-next-step" class="btn btn-primary" disabled title="Siguiente paso">
                 Siguiente paso ▶
               </button>
-              <button type="button" id="btn-final-step" class="btn btn-secondary" disabled title="Saltar al resultado final (Atajo: Fin)">
-                🏁 Ver resultado final
-              </button>
-              <button type="button" id="btn-reset-dijkstra" class="btn btn-secondary btn-sm" disabled title="Reiniciar ejecución (Atajo: Inicio)">
+              <button type="button" id="btn-reset-dijkstra" class="btn btn-secondary btn-sm" disabled title="Reiniciar ejecución">
                 ⏮ Reiniciar
               </button>
             </div>
@@ -329,7 +289,7 @@
                     <tr>
                       <th>Vértice</th>
                       <th>Distancia acumulada</th>
-                      <th>Predecesor(es)</th>
+                      <th>Predecesor</th>
                       <th>Estado</th>
                     </tr>
                   </thead>
@@ -350,7 +310,9 @@
           </div>
         </div>
 
-        <!-- 8. Matriz y Lista de Adyacencia -->
+
+
+        <!-- 5. Matriz y Lista de Adyacencia -->
         <div class="card" id="section-math-representations">
           <div class="card-header">
             <h2><span class="header-step-num">5</span> Representaciones matemáticas formales</h2>
@@ -396,22 +358,9 @@
     </div>
   </footer>
 
-  <!-- Carga del Módulo Principal ES6 (Requisito para Live Server y GitHub Pages) -->
+  <!-- Módulo principal ES6 (requiere servidor: Live Server o GitHub Pages) -->
   <script type="module" src="./js/app.js"></script>
 
-  <!-- Fallback de compatibilidad automática para ejecución local por doble clic (protocolo file:///) -->
-  <script>
-    window.addEventListener('DOMContentLoaded', () => {
-      setTimeout(() => {
-        if (!window.__APP_INITIALIZED__) {
-          console.info('Protocolo file:/// detectado (módulo ES6 bloqueado por CORS). Cargando bundle autónomo...');
-          const script = document.createElement('script');
-          script.src = './js/app.bundle.js';
-          document.body.appendChild(script);
-        }
-      }, 60);
-    });
-  </script>
 
 </body>
 </html>

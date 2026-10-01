@@ -1,8 +1,7 @@
 /**
  * graph.js
  * Módulo para la representación interna del grafo dirigido y ponderado.
- * Gestiona nodos, aristas, lista de adyacencia, matriz de pesos,
- * generación de DAGs aleatorios y conversión a formato Cytoscape.js.
+ * Gestiona nodos, aristas, lista de adyacencia, matriz de pesos y conversión a formato Cytoscape.js.
  * 
  * Proyecto: Simulador interactivo del algoritmo de Dijkstra
  */
@@ -118,6 +117,7 @@ export class Graph {
     }
     return adj;
   }
+
 
   /**
    * Construye la matriz de adyacencia ponderada.
@@ -248,115 +248,28 @@ export class Graph {
   }
 
   /**
-   * Genera un Grafo Dirigido Acíclico (DAG) ponderado aleatorio.
-   * Garantiza:
-   * 1. Aciclicidad estricta (aristas u_i -> u_j solo si i < j).
-   * 2. Conectividad asegurada: al menos una ruta desde el primer nodo al último nodo.
-   * 3. Pesos enteros positivos entre 1 y 20.
-   * 4. Densidad ajustable ('baja', 'media', 'alta').
-   * @param {'baja' | 'media' | 'alta'} density
-   */
-  generateRandomDAG(density = 'media') {
-    if (this.nodes.length < 2) return;
-    this.edges = [];
-
-    const n = this.nodes.length;
-
-    // 1. Garantizar una ruta conexa desde el primer nodo (índice 0) hasta el último (índice n - 1)
-    // Seleccionamos nodos intermedios crecientes para formar una columna vertebral conexa
-    const pathNodes = [0];
-    let currentIdx = 0;
-    while (currentIdx < n - 1) {
-      const step = Math.min(n - 1, currentIdx + Math.floor(Math.random() * 2) + 1);
-      pathNodes.push(step);
-      currentIdx = step;
-    }
-    // Aseguramos que termine en n - 1
-    if (pathNodes[pathNodes.length - 1] !== n - 1) {
-      pathNodes.push(n - 1);
-    }
-
-    for (let k = 0; k < pathNodes.length - 1; k++) {
-      const from = this.nodes[pathNodes[k]];
-      const to = this.nodes[pathNodes[k + 1]];
-      if (!this.hasEdge(from, to)) {
-        const weight = Math.floor(Math.random() * 15) + 1;
-        this.addEdge(from, to, weight);
-      }
-    }
-
-    // 2. Determinar número de aristas adicionales según la densidad elegida
-    // Densidades relativas sobre el número de nodos
-    let edgeTargetFactor;
-    switch (density) {
-      case 'baja':
-        edgeTargetFactor = 1.3;
-        break;
-      case 'alta':
-        edgeTargetFactor = 2.8;
-        break;
-      case 'media':
-      default:
-        edgeTargetFactor = 2.0;
-        break;
-    }
-
-    const totalEdgesTarget = Math.min(
-      Math.floor(n * edgeTargetFactor),
-      Math.floor((n * (n - 1)) / 2) // Máximo teórico para un DAG
-    );
-
-    // Intentar agregar aristas respetando siempre i < j (garantía matemática de DAG sin ciclos)
-    let attempts = 0;
-    const maxAttempts = 500;
-    while (this.edges.length < totalEdgesTarget && attempts < maxAttempts) {
-      attempts++;
-      const i = Math.floor(Math.random() * (n - 1));
-      const j = Math.floor(Math.random() * (n - 1 - i)) + i + 1; // j > i
-
-      const from = this.nodes[i];
-      const to = this.nodes[j];
-
-      if (!this.hasEdge(from, to)) {
-        const weight = Math.floor(Math.random() * 20) + 1; // 1 a 20
-        this.addEdge(from, to, weight);
-      }
-    }
-  }
-
-  /**
-   * Carga un ejemplo académico estructurado con 8 nodos (A a H)
-   * que contiene múltiples caminos mínimos de igual distancia entre A y H.
-   * Diseñado específicamente para demostraciones académicas y sustentación.
+   * Carga un ejemplo de 8 nodos (A a H) con un único camino mínimo de A a H.
+   * Camino mínimo: A -> B -> E -> G -> H (costo 15).
+   * Incluye una relajación (A->D = 9 mejora a 7 por B->D, G = 14 mejora a 12
+   * por E->G) y varias aristas descartadas, para mostrar cada caso del algoritmo.
    */
   loadDemonstrationExample() {
-    // 8 nodos: A, B, C, D, E, F, G, H
     this.setNodes(8);
-
-    // Conjunto de aristas con empates matemáticos exactos:
-    // Camino 1: A -> B -> D -> G -> H: 4 + 3 + 5 + 3 = 15
-    // Camino 2: A -> C -> D -> G -> H: 4 + 3 + 5 + 3 = 15
-    // Camino 3: A -> B -> E -> G -> H: 4 + 6 + 2 + 3 = 15
-    // Camino 4: A -> C -> F -> G -> H: 4 + 6 + 2 + 3 = 15
-    // Aristas secundarias que se evalúan y descartan o mejoran:
-    // A -> D (peso 9, mejorado a 7 por B->D y C->D)
-    // D -> H (peso 12, descartado frente al camino por G)
-    // B -> F (peso 8, descartado)
 
     const demoEdges = [
       { from: 'A', to: 'B', weight: 4 },
-      { from: 'A', to: 'C', weight: 4 },
-      { from: 'A', to: 'D', weight: 9 }, // Inicialmente pone dist(D)=9, luego se relaja a 7
-      { from: 'B', to: 'D', weight: 3 }, // dist(D)=7, predecesor [B]
-      { from: 'C', to: 'D', weight: 3 }, // dist(D)=7, empate -> predecesor [B, C]
-      { from: 'B', to: 'E', weight: 6 }, // dist(E)=10
-      { from: 'C', to: 'F', weight: 6 }, // dist(F)=10
-      { from: 'B', to: 'F', weight: 8 }, // dist=12 > 10 (descartada)
-      { from: 'D', to: 'G', weight: 5 }, // dist(G)=12, predecesor [D]
-      { from: 'E', to: 'G', weight: 2 }, // dist(G)=12, empate -> predecesor [D, E]
-      { from: 'F', to: 'G', weight: 2 }, // dist(G)=12, empate -> predecesor [D, E, F]
-      { from: 'D', to: 'H', weight: 12 },// dist=19 > 15 (descartada)
-      { from: 'G', to: 'H', weight: 3 }  // dist(H)=15, óptimo final
+      { from: 'A', to: 'C', weight: 5 },
+      { from: 'A', to: 'D', weight: 9 },
+      { from: 'B', to: 'D', weight: 3 },
+      { from: 'C', to: 'D', weight: 3 },
+      { from: 'B', to: 'E', weight: 6 },
+      { from: 'B', to: 'F', weight: 8 },
+      { from: 'C', to: 'F', weight: 6 },
+      { from: 'D', to: 'G', weight: 7 },
+      { from: 'E', to: 'G', weight: 2 },
+      { from: 'F', to: 'G', weight: 2 },
+      { from: 'D', to: 'H', weight: 12 },
+      { from: 'G', to: 'H', weight: 3 }
     ];
 
     for (const e of demoEdges) {
